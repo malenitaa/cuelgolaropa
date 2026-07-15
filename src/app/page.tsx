@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { weatherCodeToEmoji } from "@/lib/weatherCodes";
 import type { ReasonKey } from "@/lib/decision";
-import { findEasterEgg } from "@/lib/easterEggs";
+import { findEasterEgg, toBinary } from "@/lib/easterEggs";
 import {
   UI,
   REASONS,
@@ -38,6 +38,7 @@ interface WeatherResult {
   reasonKey: ReasonKey;
   reasonValue: number | null;
   customReason?: { es: string; en: string };
+  binaryMode?: boolean;
   current: { isDay: boolean; weatherCode: number };
   hourlyPreview: HourlyPreviewItem[];
   dailyPreview: DailyPreviewItem[];
@@ -184,6 +185,8 @@ export default function Home() {
   );
   const [result, setResult] = useState<WeatherResult | null>(null);
   const [showDaily, setShowDaily] = useState(false);
+  const [binaryToggled, setBinaryToggled] = useState(false);
+  const [binaryHovered, setBinaryHovered] = useState(false);
 
   const t = UI[lang];
   const locationLabel = locationLabels ? locationLabels[lang] : null;
@@ -256,7 +259,11 @@ export default function Home() {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "BUTTON" || tag === "A") return;
       e.preventDefault();
-      setShowDaily((prev) => !prev);
+      if (result?.binaryMode) {
+        setBinaryToggled((prev) => !prev);
+      } else {
+        setShowDaily((prev) => !prev);
+      }
     }
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
@@ -349,6 +356,7 @@ export default function Home() {
         reasonKey: "clear",
         reasonValue: null,
         customReason: easterEgg.reason,
+        binaryMode: easterEgg.binaryMode,
         current: { isDay: true, weatherCode: 0 },
         hourlyPreview: [],
         dailyPreview: [],
@@ -462,6 +470,14 @@ export default function Home() {
   if (result) {
     const isSi = result.decision === "SI";
     const styles = COLOR_STYLES[result.color];
+    const rawWord = isSi ? t.yes : t.no;
+    const rawReasonSentence = `${isSi ? t.canHang : t.cannotHang} — ${
+      result.customReason
+        ? result.customReason[lang]
+        : REASONS[lang][result.reasonKey](result.reasonValue)
+    }`;
+    const isBinaryHidden =
+      !!result.binaryMode && !binaryToggled && !binaryHovered;
     return (
       <>
         <LangToggle
@@ -472,24 +488,41 @@ export default function Home() {
         <div
           className={`flex min-h-[var(--app-height)] flex-col px-6 py-10 text-center ${styles.bg}`}
         >
-          <div className="flex flex-1 flex-col items-center justify-center gap-5">
+          <div
+            className="flex flex-1 flex-col items-center justify-center gap-5"
+            onMouseEnter={
+              result.binaryMode ? () => setBinaryHovered(true) : undefined
+            }
+            onMouseLeave={
+              result.binaryMode ? () => setBinaryHovered(false) : undefined
+            }
+          >
             {locationLabel && (
               <p
-                className={`text-sm font-medium uppercase tracking-wide ${styles.subtext}`}
+                className={`text-sm font-medium uppercase tracking-wide ${styles.subtext} ${
+                  isBinaryHidden ? "font-mono" : ""
+                }`}
               >
-                {locationLabel}
+                {isBinaryHidden ? toBinary(locationLabel) : locationLabel}
               </p>
             )}
             <h1
-              className={`text-[24vw] font-black leading-none drop-shadow-sm sm:text-[14vw] ${styles.text}`}
+              className={`leading-none drop-shadow-sm ${styles.text} ${
+                isBinaryHidden
+                  ? "font-mono text-2xl tracking-tight sm:text-4xl"
+                  : "text-[24vw] font-black sm:text-[14vw]"
+              }`}
             >
-              {isSi ? t.yes : t.no}
+              {isBinaryHidden ? toBinary(rawWord) : rawWord}
             </h1>
-            <p className={`max-w-md text-lg font-medium sm:text-xl ${styles.text}`}>
-              {isSi ? t.canHang : t.cannotHang} —{" "}
-              {result.customReason
-                ? result.customReason[lang]
-                : REASONS[lang][result.reasonKey](result.reasonValue)}
+            <p
+              className={`max-w-md text-lg font-medium sm:text-xl ${styles.text} ${
+                isBinaryHidden ? "font-mono text-sm sm:text-base" : ""
+              }`}
+            >
+              {isBinaryHidden
+                ? toBinary(rawReasonSentence)
+                : rawReasonSentence}
             </p>
             {result.hourlyPreview.length > 0 && (
               <div
@@ -553,6 +586,8 @@ export default function Home() {
                 setResult(null);
                 setLocationLabels(null);
                 setShowDaily(false);
+                setBinaryToggled(false);
+                setBinaryHovered(false);
                 setPhase("need-city");
               }}
               className={`text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
