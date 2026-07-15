@@ -1,0 +1,124 @@
+import type { ReasonKey } from "@/lib/decision";
+
+export type Lang = "es" | "en";
+
+export const WEEKDAY_LETTERS: Record<Lang, string[]> = {
+  es: ["D", "L", "M", "X", "J", "V", "S"],
+  en: ["S", "M", "T", "W", "T", "F", "S"],
+};
+
+export const REASONS: Record<
+  Lang,
+  Record<ReasonKey, (value: number | null) => string>
+> = {
+  es: {
+    raining: () => "ya está lloviendo",
+    rainProb: (v) => `${v}% de probabilidad de lluvia`,
+    humidExtreme: (v) => `humedad extrema (${v}%), no va a secar`,
+    humidHigh: (v) => `humedad muy alta (${v}%), va a tardar en secar`,
+    rainLater: (v) => `${v}% de probabilidad de lluvia más tarde`,
+    windIdeal: () => "viento ideal para secar",
+    windCalm: () => "casi no hay viento",
+    windStrong: () => "viento demasiado fuerte",
+    clear: () => "cielo despejado y humedad baja",
+  },
+  en: {
+    raining: () => "it's raining right now",
+    rainProb: (v) => `${v}% chance of rain`,
+    humidExtreme: (v) => `extreme humidity (${v}%), it won't dry`,
+    humidHigh: (v) => `very high humidity (${v}%), it'll take a while to dry`,
+    rainLater: (v) => `${v}% chance of rain later`,
+    windIdeal: () => "good drying breeze",
+    windCalm: () => "barely any wind",
+    windStrong: () => "wind's too strong",
+    clear: () => "clear skies and low humidity",
+  },
+};
+
+export type ErrorKey =
+  | "missingCoords"
+  | "invalidCoords"
+  | "weatherServiceError"
+  | "weatherServiceUnreachable"
+  | "insufficientData"
+  | "missingCity"
+  | "geocodeServiceError"
+  | "geocodeServiceUnreachable"
+  | "cityNotFound"
+  | "networkError";
+
+export const ERRORS: Record<
+  Lang,
+  Record<ErrorKey, (detail?: string) => string>
+> = {
+  es: {
+    missingCoords: () => "Faltan los parámetros de ubicación.",
+    invalidCoords: () => "Ubicación inválida.",
+    weatherServiceError: () => "El servicio de clima no respondió correctamente.",
+    weatherServiceUnreachable: () => "No se pudo contactar al servicio de clima.",
+    insufficientData: () => "El servicio de clima no devolvió datos suficientes.",
+    missingCity: () => "Falta el nombre de la ciudad.",
+    geocodeServiceError: () => "El servicio de ubicación no respondió correctamente.",
+    geocodeServiceUnreachable: () => "No se pudo contactar al servicio de ubicación.",
+    cityNotFound: (city) => `No se encontró la ciudad "${city}".`,
+    networkError: () => "No se pudo conectar. Revisá tu conexión.",
+  },
+  en: {
+    missingCoords: () => "Missing location parameters.",
+    invalidCoords: () => "Invalid location.",
+    weatherServiceError: () => "The weather service didn't respond correctly.",
+    weatherServiceUnreachable: () => "Couldn't reach the weather service.",
+    insufficientData: () => "The weather service didn't return enough data.",
+    missingCity: () => "Missing city name.",
+    geocodeServiceError: () => "The location service didn't respond correctly.",
+    geocodeServiceUnreachable: () => "Couldn't reach the location service.",
+    cityNotFound: (city) => `Couldn't find the city "${city}".`,
+    networkError: () => "Couldn't connect. Check your internet connection.",
+  },
+};
+
+export const UI: Record<
+  Lang,
+  {
+    locating: string;
+    loadingWeather: string;
+    needCityPrompt: string;
+    cityPlaceholder: string;
+    go: string;
+    retryCity: string;
+    tryAnotherCity: string;
+    viewNextDays: string;
+    canHang: string;
+    cannotHang: string;
+  }
+> = {
+  es: {
+    locating: "Buscando tu ubicación…",
+    loadingWeather: "Consultando el clima…",
+    needCityPrompt: "No pudimos usar tu ubicación. ¿En qué ciudad estás?",
+    cityPlaceholder: "Ej: Rosario",
+    go: "Ir",
+    retryCity: "Probar con otra ciudad",
+    tryAnotherCity: "Probar otra ciudad",
+    viewNextDays: "Ver próximos 3 días",
+    canHang: "Podés colgar la ropa",
+    cannotHang: "Mejor no cuelgues la ropa",
+  },
+  en: {
+    locating: "Finding your location…",
+    loadingWeather: "Checking the weather…",
+    needCityPrompt: "We couldn't use your location. What city are you in?",
+    cityPlaceholder: "E.g: Chicago",
+    go: "Go",
+    retryCity: "Try another city",
+    tryAnotherCity: "Try another city",
+    viewNextDays: "See next 3 days",
+    canHang: "You can hang your laundry",
+    cannotHang: "Better not hang your laundry",
+  },
+};
+
+export function detectLang(): Lang {
+  if (typeof navigator === "undefined") return "es";
+  return navigator.language?.toLowerCase().startsWith("es") ? "es" : "en";
+}

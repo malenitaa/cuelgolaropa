@@ -8,10 +8,22 @@ export interface HourlyPoint {
 
 export type DecisionColor = "green" | "yellow" | "red";
 
+export type ReasonKey =
+  | "raining"
+  | "rainProb"
+  | "humidExtreme"
+  | "humidHigh"
+  | "rainLater"
+  | "windIdeal"
+  | "windCalm"
+  | "windStrong"
+  | "clear";
+
 export interface DecisionResult {
   decision: "SI" | "NO";
   color: DecisionColor;
-  reason: string;
+  reasonKey: ReasonKey;
+  reasonValue: number | null;
   maxPrecipProbability: number;
   avgHumidity: number;
   avgWindSpeed: number;
@@ -31,6 +43,7 @@ const RAINING_CODES = new Set([
  * - amarillo (SÍ, con cuidado): no llueve pero la humedad es alta, tarda en secar.
  * - verde (SÍ): no llueve y la humedad es baja/media.
  * El viento no cambia el color, solo ajusta el motivo mostrado.
+ * Devuelve una reasonKey (no texto) para que el cliente la traduzca al idioma activo.
  */
 export function decide(
   windowHours: HourlyPoint[],
@@ -43,24 +56,29 @@ export function decide(
   const avgWindSpeed = avg(windowHours.map((h) => h.windSpeed));
 
   const isRainingNow = RAINING_CODES.has(currentWeatherCode);
-  const windDescription =
+  const windReasonKey: ReasonKey | null =
     avgWindSpeed >= 5 && avgWindSpeed <= 30
-      ? "viento ideal para secar"
+      ? "windIdeal"
       : avgWindSpeed < 3
-        ? "casi no hay viento"
+        ? "windCalm"
         : avgWindSpeed > 50
-          ? "viento demasiado fuerte"
+          ? "windStrong"
           : null;
 
   if (isRainingNow || maxPrecipProbability >= 30 || avgHumidity >= 90) {
     return {
       decision: "NO",
       color: "red",
-      reason: isRainingNow
-        ? "ya está lloviendo"
+      reasonKey: isRainingNow
+        ? "raining"
         : avgHumidity >= 90
-          ? `humedad extrema (${Math.round(avgHumidity)}%), no va a secar`
-          : `${Math.round(maxPrecipProbability)}% de probabilidad de lluvia`,
+          ? "humidExtreme"
+          : "rainProb",
+      reasonValue: isRainingNow
+        ? null
+        : avgHumidity >= 90
+          ? Math.round(avgHumidity)
+          : Math.round(maxPrecipProbability),
       maxPrecipProbability,
       avgHumidity,
       avgWindSpeed,
@@ -71,10 +89,11 @@ export function decide(
     return {
       decision: "SI",
       color: "yellow",
-      reason:
+      reasonKey: avgHumidity > 75 ? "humidHigh" : "rainLater",
+      reasonValue:
         avgHumidity > 75
-          ? `humedad muy alta (${Math.round(avgHumidity)}%), va a tardar en secar`
-          : `${Math.round(maxPrecipProbability)}% de probabilidad de lluvia más tarde`,
+          ? Math.round(avgHumidity)
+          : Math.round(maxPrecipProbability),
       maxPrecipProbability,
       avgHumidity,
       avgWindSpeed,
@@ -84,7 +103,8 @@ export function decide(
   return {
     decision: "SI",
     color: "green",
-    reason: windDescription ?? "cielo despejado y humedad baja",
+    reasonKey: windReasonKey ?? "clear",
+    reasonValue: null,
     maxPrecipProbability,
     avgHumidity,
     avgWindSpeed,
