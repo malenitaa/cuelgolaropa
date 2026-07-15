@@ -13,6 +13,7 @@ export const REASONS: Record<
 > = {
   es: {
     raining: () => "ya está lloviendo",
+    snowing: () => "está nevando",
     rainProb: (v) => `${v}% de probabilidad de lluvia`,
     humidExtreme: (v) => `humedad extrema (${v}%), no va a secar`,
     humidHigh: (v) => `humedad muy alta (${v}%), va a tardar en secar`,
@@ -24,6 +25,7 @@ export const REASONS: Record<
   },
   en: {
     raining: () => "it's raining right now",
+    snowing: () => "it's snowing right now",
     rainProb: (v) => `${v}% chance of rain`,
     humidExtreme: (v) => `extreme humidity (${v}%), it won't dry`,
     humidHigh: (v) => `very high humidity (${v}%), it'll take a while to dry`,
@@ -80,6 +82,7 @@ export const ERRORS: Record<
 export const UI: Record<
   Lang,
   {
+    pageTitle: string;
     locating: string;
     loadingWeather: string;
     needCityPrompt: string;
@@ -95,6 +98,7 @@ export const UI: Record<
   }
 > = {
   es: {
+    pageTitle: "¿Cuelgo la ropa hoy?",
     locating: "Buscando tu ubicación…",
     loadingWeather: "Consultando el clima…",
     needCityPrompt: "No pudimos usar tu ubicación. ¿En qué ciudad estás?",
@@ -109,6 +113,7 @@ export const UI: Record<
     no: "NO",
   },
   en: {
+    pageTitle: "Should I hang my laundry today?",
     locating: "Finding your location…",
     loadingWeather: "Checking the weather…",
     needCityPrompt: "We couldn't use your location. What city are you in?",
