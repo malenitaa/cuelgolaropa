@@ -1,65 +1,224 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import { weatherCodeToEmoji } from "@/lib/weatherCodes";
+
+type Phase = "locating" | "need-city" | "loading" | "result" | "error";
+
+interface HourlyPreviewItem {
+  time: string;
+  precipitationProbability: number;
+  weatherCode: number;
+  temperature: number | null;
+}
+
+interface WeatherResult {
+  decision: "SI" | "NO";
+  reason: string;
+  hourlyPreview: HourlyPreviewItem[];
+}
+
+function formatHour(iso: string) {
+  return iso.slice(11, 16);
+}
+
+function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10">
+      {children}
     </div>
   );
+}
+
+function hasGeolocation() {
+  return typeof navigator !== "undefined" && "geolocation" in navigator;
+}
+
+export default function Home() {
+  const [phase, setPhase] = useState<Phase>("locating");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [city, setCity] = useState("");
+  const [locationLabel, setLocationLabel] = useState<string | null>(null);
+  const [result, setResult] = useState<WeatherResult | null>(null);
+
+  async function fetchWeather(lat: number, lon: number) {
+    setPhase("loading");
+    try {
+      const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error ?? "No se pudo obtener el clima.");
+        setPhase("error");
+        return;
+      }
+      setResult(data);
+      setPhase("result");
+    } catch {
+      setErrorMessage("No se pudo obtener el clima. Revisá tu conexión.");
+      setPhase("error");
+    }
+  }
+
+  useEffect(() => {
+    if (!hasGeolocation()) {
+      const id = setTimeout(() => setPhase("need-city"), 0);
+      return () => clearTimeout(id);
+    }
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        setPhase("need-city");
+      }
+    }, 10000);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        setPhase("need-city");
+      },
+      { timeout: 9000, maximumAge: 5 * 60 * 1000 }
+    );
+
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  async function handleCitySubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = city.trim();
+    if (!trimmed) return;
+    setPhase("loading");
+    try {
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(trimmed)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error ?? "No se encontró la ciudad.");
+        setPhase("error");
+        return;
+      }
+      setLocationLabel(
+        [data.name, data.admin1, data.country].filter(Boolean).join(", ")
+      );
+      await fetchWeather(data.latitude, data.longitude);
+    } catch {
+      setErrorMessage("No se pudo buscar la ciudad. Revisá tu conexión.");
+      setPhase("error");
+    }
+  }
+
+  if (phase === "locating" || phase === "loading") {
+    return (
+      <Screen>
+        <p className="animate-pulse text-xl text-zinc-500">
+          {phase === "locating"
+            ? "Buscando tu ubicación…"
+            : "Consultando el clima…"}
+        </p>
+      </Screen>
+    );
+  }
+
+  if (phase === "need-city") {
+    return (
+      <Screen>
+        <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+          <p className="text-lg text-zinc-600">
+            No pudimos usar tu ubicación. ¿En qué ciudad estás?
+          </p>
+          <form onSubmit={handleCitySubmit} className="flex w-full gap-2">
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Ej: Rosario"
+              className="flex-1 rounded-lg border border-zinc-300 px-4 py-3 text-lg outline-none focus:border-zinc-500"
+              autoFocus
+            />
+            <button
+              type="submit"
+              className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white"
+            >
+              Ir
+            </button>
+          </form>
+        </div>
+      </Screen>
+    );
+  }
+
+  if (phase === "error") {
+    return (
+      <Screen>
+        <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+          <p className="text-lg text-zinc-600">{errorMessage}</p>
+          <button
+            onClick={() => setPhase("need-city")}
+            className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white"
+          >
+            Probar con otra ciudad
+          </button>
+        </div>
+      </Screen>
+    );
+  }
+
+  if (result) {
+    const isSi = result.decision === "SI";
+    return (
+      <div
+        className={`flex min-h-dvh flex-col items-center justify-center gap-6 px-6 py-10 text-center ${
+          isSi ? "bg-emerald-500" : "bg-rose-600"
+        }`}
+      >
+        {locationLabel && (
+          <p className="text-sm font-medium uppercase tracking-wide text-white/80">
+            {locationLabel}
+          </p>
+        )}
+        <h1 className="text-[28vw] font-black leading-none text-white drop-shadow-sm sm:text-[18vw]">
+          {isSi ? "SÍ" : "NO"}
+        </h1>
+        <p className="max-w-md text-xl font-medium text-white sm:text-2xl">
+          {isSi ? "Podés colgar la ropa" : "Mejor no cuelgues la ropa"} —{" "}
+          {result.reason}
+        </p>
+        <div className="mt-2 flex gap-3 rounded-2xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+          {result.hourlyPreview.map((h) => (
+            <div
+              key={h.time}
+              className="flex flex-col items-center gap-1 text-white"
+            >
+              <span className="text-xs font-medium opacity-80">
+                {formatHour(h.time)}
+              </span>
+              <span className="text-2xl">{weatherCodeToEmoji(h.weatherCode)}</span>
+              <span className="text-xs opacity-80">
+                {Math.round(h.precipitationProbability)}%
+              </span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={() => {
+            setResult(null);
+            setLocationLabel(null);
+            setPhase("need-city");
+          }}
+          className="mt-4 text-sm font-medium text-white/70 underline underline-offset-4"
+        >
+          Probar otra ciudad
+        </button>
+      </div>
+    );
+  }
+
+  return null;
 }
