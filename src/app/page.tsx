@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { weatherCodeToEmoji } from "@/lib/weatherCodes";
 
 type Phase = "locating" | "need-city" | "loading" | "result" | "error";
+type DecisionColor = "green" | "yellow" | "red";
 
 interface HourlyPreviewItem {
   time: string;
@@ -14,17 +15,59 @@ interface HourlyPreviewItem {
 
 interface WeatherResult {
   decision: "SI" | "NO";
+  color: DecisionColor;
   reason: string;
+  current: { isDay: boolean };
   hourlyPreview: HourlyPreviewItem[];
 }
+
+const COLOR_STYLES: Record<
+  DecisionColor,
+  { bg: string; text: string; subtext: string; chipBg: string; linkText: string }
+> = {
+  green: {
+    bg: "bg-emerald-500",
+    text: "text-white",
+    subtext: "text-white/80",
+    chipBg: "bg-white/15",
+    linkText: "text-white/70",
+  },
+  yellow: {
+    bg: "bg-amber-400",
+    text: "text-zinc-900",
+    subtext: "text-zinc-900/70",
+    chipBg: "bg-black/10",
+    linkText: "text-zinc-900/60",
+  },
+  red: {
+    bg: "bg-rose-600",
+    text: "text-white",
+    subtext: "text-white/80",
+    chipBg: "bg-white/15",
+    linkText: "text-white/70",
+  },
+};
 
 function formatHour(iso: string) {
   return iso.slice(11, 16);
 }
 
+function setFavicon(emoji: string) {
+  if (typeof document === "undefined") return;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
+  const href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "icon";
+    document.head.appendChild(link);
+  }
+  link.href = href;
+}
+
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
       {children}
     </div>
   );
@@ -40,6 +83,14 @@ export default function Home() {
   const [city, setCity] = useState("");
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [result, setResult] = useState<WeatherResult | null>(null);
+
+  useEffect(() => {
+    if (phase === "result" && result) {
+      setFavicon(result.current.isDay ? "☀️" : "🌙");
+    } else {
+      setFavicon("☁️");
+    }
+  }, [phase, result]);
 
   async function fetchWeather(lat: number, lon: number) {
     setPhase("loading");
@@ -117,7 +168,7 @@ export default function Home() {
   if (phase === "locating" || phase === "loading") {
     return (
       <Screen>
-        <p className="animate-pulse text-xl text-zinc-500">
+        <p className="animate-pulse text-2xl text-zinc-500 dark:text-zinc-400">
           {phase === "locating"
             ? "Buscando tu ubicación…"
             : "Consultando el clima…"}
@@ -130,7 +181,7 @@ export default function Home() {
     return (
       <Screen>
         <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-          <p className="text-lg text-zinc-600">
+          <p className="text-xl text-zinc-600 dark:text-zinc-300">
             No pudimos usar tu ubicación. ¿En qué ciudad estás?
           </p>
           <form onSubmit={handleCitySubmit} className="flex w-full gap-2">
@@ -139,12 +190,12 @@ export default function Home() {
               value={city}
               onChange={(e) => setCity(e.target.value)}
               placeholder="Ej: Rosario"
-              className="flex-1 rounded-lg border border-zinc-300 px-4 py-3 text-lg outline-none focus:border-zinc-500"
+              className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-lg text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600 dark:focus:border-zinc-400"
               autoFocus
             />
             <button
               type="submit"
-              className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white"
+              className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
             >
               Ir
             </button>
@@ -158,10 +209,12 @@ export default function Home() {
     return (
       <Screen>
         <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
-          <p className="text-lg text-zinc-600">{errorMessage}</p>
+          <p className="text-xl text-zinc-600 dark:text-zinc-300">
+            {errorMessage}
+          </p>
           <button
             onClick={() => setPhase("need-city")}
-            className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white"
+            className="rounded-lg bg-zinc-900 px-5 py-3 text-lg font-semibold text-white dark:bg-zinc-100 dark:text-zinc-900"
           >
             Probar con otra ciudad
           </button>
@@ -172,29 +225,34 @@ export default function Home() {
 
   if (result) {
     const isSi = result.decision === "SI";
+    const styles = COLOR_STYLES[result.color];
     return (
       <div
-        className={`flex min-h-dvh flex-col items-center justify-center gap-6 px-6 py-10 text-center ${
-          isSi ? "bg-emerald-500" : "bg-rose-600"
-        }`}
+        className={`flex min-h-dvh flex-col items-center justify-center gap-6 px-6 py-10 text-center ${styles.bg}`}
       >
         {locationLabel && (
-          <p className="text-sm font-medium uppercase tracking-wide text-white/80">
+          <p
+            className={`text-sm font-medium uppercase tracking-wide ${styles.subtext}`}
+          >
             {locationLabel}
           </p>
         )}
-        <h1 className="text-[28vw] font-black leading-none text-white drop-shadow-sm sm:text-[18vw]">
+        <h1
+          className={`text-[28vw] font-black leading-none drop-shadow-sm sm:text-[18vw] ${styles.text}`}
+        >
           {isSi ? "SÍ" : "NO"}
         </h1>
-        <p className="max-w-md text-xl font-medium text-white sm:text-2xl">
+        <p className={`max-w-md text-xl font-medium sm:text-2xl ${styles.text}`}>
           {isSi ? "Podés colgar la ropa" : "Mejor no cuelgues la ropa"} —{" "}
           {result.reason}
         </p>
-        <div className="mt-2 flex gap-3 rounded-2xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+        <div
+          className={`mt-2 flex gap-3 rounded-2xl px-4 py-3 backdrop-blur-sm ${styles.chipBg}`}
+        >
           {result.hourlyPreview.map((h) => (
             <div
               key={h.time}
-              className="flex flex-col items-center gap-1 text-white"
+              className={`flex flex-col items-center gap-1 ${styles.text}`}
             >
               <span className="text-xs font-medium opacity-80">
                 {formatHour(h.time)}
@@ -212,7 +270,7 @@ export default function Home() {
             setLocationLabel(null);
             setPhase("need-city");
           }}
-          className="mt-4 text-sm font-medium text-white/70 underline underline-offset-4"
+          className={`mt-4 text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
         >
           Probar otra ciudad
         </button>

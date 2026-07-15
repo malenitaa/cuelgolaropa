@@ -12,16 +12,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const cloudFavicon =
+  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ctext y=".9em" font-size="90"%3E%E2%98%81%EF%B8%8F%3C/text%3E%3C/svg%3E';
+
 export const metadata: Metadata = {
   title: "¿Cuelgo la ropa hoy?",
   description:
     "Una sola pregunta, una sola respuesta: ¿conviene colgar la ropa a secar hoy?",
+  icons: { icon: cloudFavicon },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#10b981",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 export default function RootLayout({

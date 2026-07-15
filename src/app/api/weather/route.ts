@@ -6,6 +6,7 @@ interface OpenMeteoForecastResponse {
     time: string;
     temperature: number;
     weathercode: number;
+    is_day: 0 | 1;
   };
   hourly: {
     time: string[];
@@ -14,10 +15,6 @@ interface OpenMeteoForecastResponse {
     wind_speed_10m: number[];
     weather_code: number[];
     temperature_2m: number[];
-  };
-  daily: {
-    sunrise: string[];
-    sunset: string[];
   };
 }
 
@@ -51,7 +48,6 @@ export async function GET(request: NextRequest) {
     "hourly",
     "precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,temperature_2m"
   );
-  url.searchParams.set("daily", "sunrise,sunset");
   url.searchParams.set("current_weather", "true");
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("forecast_days", "1");
@@ -73,9 +69,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { current_weather, hourly, daily } = data;
-  const sunrise = daily.sunrise[0];
-  const sunset = daily.sunset[0];
+  const { current_weather, hourly } = data;
 
   let startIndex = hourly.time.findIndex((t) => t >= current_weather.time);
   if (startIndex === -1) startIndex = 0;
@@ -91,11 +85,22 @@ export async function GET(request: NextRequest) {
       weatherCode: hourly.weather_code[startIndex + i] ?? 0,
     }));
 
-  const currentResponse = {
+  if (candidate.length === 0) {
+    return NextResponse.json(
+      { error: "El servicio de clima no devolvió datos suficientes." },
+      { status: 502 }
+    );
+  }
+
+  const result = decide(candidate, current_weather.weathercode);
+
+  return NextResponse.json({
+    ...result,
     current: {
       time: current_weather.time,
       temperature: current_weather.temperature,
       weatherCode: current_weather.weathercode,
+      isDay: current_weather.is_day === 1,
     },
     hourlyPreview: candidate.slice(0, 6).map((h, i) => ({
       time: h.time,
@@ -103,29 +108,5 @@ export async function GET(request: NextRequest) {
       weatherCode: h.weatherCode,
       temperature: hourly.temperature_2m[startIndex + i] ?? null,
     })),
-  };
-
-  const isDaytimeNow =
-    current_weather.time >= sunrise && current_weather.time < sunset;
-
-  if (!isDaytimeNow) {
-    const reason =
-      current_weather.time < sunrise
-        ? "todavía no amaneció, esperá a la mañana"
-        : "ya se puso el sol, esperá a mañana";
-    return NextResponse.json({
-      decision: "NO",
-      reason,
-      score: 0,
-      maxPrecipProbability: null,
-      avgHumidity: null,
-      avgWindSpeed: null,
-      ...currentResponse,
-    });
-  }
-
-  const windowHours = candidate.filter((h) => h.time <= sunset);
-  const result = decide(windowHours);
-
-  return NextResponse.json({ ...result, ...currentResponse });
+  });
 }
