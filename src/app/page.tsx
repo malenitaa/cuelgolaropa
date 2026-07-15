@@ -340,7 +340,7 @@ export default function Home() {
           <h1
             className={`text-[28vw] font-black leading-none drop-shadow-sm sm:text-[18vw] ${styles.text}`}
           >
-            {isSi ? "SÍ" : "NO"}
+            {isSi ? t.yes : t.no}
           </h1>
           <p className={`max-w-md text-xl font-medium sm:text-2xl ${styles.text}`}>
             {isSi ? t.canHang : t.cannotHang} —{" "}
