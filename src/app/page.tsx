@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { weatherCodeToEmoji } from "@/lib/weatherCodes";
 import type { ReasonKey } from "@/lib/decision";
+import { findEasterEgg } from "@/lib/easterEggs";
 import {
   UI,
   REASONS,
@@ -36,6 +37,7 @@ interface WeatherResult {
   color: DecisionColor;
   reasonKey: ReasonKey;
   reasonValue: number | null;
+  customReason?: { es: string; en: string };
   current: { isDay: boolean; weatherCode: number };
   hourlyPreview: HourlyPreviewItem[];
   dailyPreview: DailyPreviewItem[];
@@ -274,6 +276,24 @@ export default function Home() {
     e.preventDefault();
     const trimmed = city.trim();
     if (!trimmed) return;
+
+    const easterEgg = findEasterEgg(trimmed);
+    if (easterEgg) {
+      setLocationLabels(easterEgg.labels);
+      setResult({
+        decision: easterEgg.decision,
+        color: easterEgg.color,
+        reasonKey: "clear",
+        reasonValue: null,
+        customReason: easterEgg.reason,
+        current: { isDay: true, weatherCode: 0 },
+        hourlyPreview: [],
+        dailyPreview: [],
+      });
+      setPhase("result");
+      return;
+    }
+
     setPhase("loading");
     try {
       const [esRes, enRes] = await Promise.all([
@@ -404,61 +424,67 @@ export default function Home() {
             </h1>
             <p className={`max-w-md text-lg font-medium sm:text-xl ${styles.text}`}>
               {isSi ? t.canHang : t.cannotHang} —{" "}
-              {REASONS[lang][result.reasonKey](result.reasonValue)}
+              {result.customReason
+                ? result.customReason[lang]
+                : REASONS[lang][result.reasonKey](result.reasonValue)}
             </p>
-            <div
-              className={`mt-1 flex gap-2 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
-            >
-              {result.hourlyPreview.map((h) => (
-                <div
-                  key={h.time}
-                  className={`flex flex-col items-center gap-0.5 ${styles.text}`}
-                >
-                  <span className="text-[11px] font-medium opacity-80">
-                    {formatHour(h.time)}
-                  </span>
-                  <span className="text-lg">
-                    {weatherCodeToEmoji(h.weatherCode)}
-                  </span>
-                  <span className="text-[11px] opacity-80">
-                    💧{Math.round(h.precipitationProbability)}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col items-center gap-3 pb-2">
-            <div className="grid">
+            {result.hourlyPreview.length > 0 && (
               <div
-                onClick={() => setShowDaily(false)}
-                className={`col-start-1 row-start-1 flex place-self-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg} ${
-                  showDaily ? "cursor-pointer" : "invisible pointer-events-none"
-                }`}
+                className={`mt-1 flex gap-2 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
               >
-                {result.dailyPreview.map((d) => (
+                {result.hourlyPreview.map((h) => (
                   <div
-                    key={d.day}
+                    key={h.time}
                     className={`flex flex-col items-center gap-0.5 ${styles.text}`}
                   >
-                    <span className="text-[11px] font-semibold opacity-80">
-                      {WEEKDAY_LETTERS[lang][d.weekdayIndex]}
+                    <span className="text-[11px] font-medium opacity-80">
+                      {formatHour(h.time)}
                     </span>
                     <span className="text-lg">
-                      {weatherCodeToEmoji(d.weatherCode)}
+                      {weatherCodeToEmoji(h.weatherCode)}
                     </span>
-                    <span className="text-[11px] opacity-80">{d.day}</span>
+                    <span className="text-[11px] opacity-80">
+                      💧{Math.round(h.precipitationProbability)}%
+                    </span>
                   </div>
                 ))}
               </div>
-              <button
-                onClick={() => setShowDaily(true)}
-                className={`col-start-1 row-start-1 place-self-center rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text} ${
-                  showDaily ? "invisible pointer-events-none" : ""
-                }`}
-              >
-                {t.viewNextDays}
-              </button>
-            </div>
+            )}
+          </div>
+          <div className="flex flex-col items-center gap-3 pb-2">
+            {result.dailyPreview.length > 0 && (
+              <div className="grid">
+                <div
+                  onClick={() => setShowDaily(false)}
+                  className={`col-start-1 row-start-1 flex place-self-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg} ${
+                    showDaily ? "cursor-pointer" : "invisible pointer-events-none"
+                  }`}
+                >
+                  {result.dailyPreview.map((d) => (
+                    <div
+                      key={d.day}
+                      className={`flex flex-col items-center gap-0.5 ${styles.text}`}
+                    >
+                      <span className="text-[11px] font-semibold opacity-80">
+                        {WEEKDAY_LETTERS[lang][d.weekdayIndex]}
+                      </span>
+                      <span className="text-lg">
+                        {weatherCodeToEmoji(d.weatherCode)}
+                      </span>
+                      <span className="text-[11px] opacity-80">{d.day}</span>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowDaily(true)}
+                  className={`col-start-1 row-start-1 place-self-center rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text} ${
+                    showDaily ? "invisible pointer-events-none" : ""
+                  }`}
+                >
+                  {t.viewNextDays}
+                </button>
+              </div>
+            )}
             <button
               onClick={() => {
                 setResult(null);
