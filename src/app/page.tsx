@@ -36,7 +36,7 @@ interface WeatherResult {
   color: DecisionColor;
   reasonKey: ReasonKey;
   reasonValue: number | null;
-  current: { isDay: boolean };
+  current: { isDay: boolean; weatherCode: number };
   hourlyPreview: HourlyPreviewItem[];
   dailyPreview: DailyPreviewItem[];
 }
@@ -75,6 +75,13 @@ const COLOR_STYLES: Record<
 
 function formatHour(iso: string) {
   return iso.slice(11, 16);
+}
+
+function faviconEmojiFor(weatherCode: number, isDay: boolean) {
+  // Cielo despejado es el único caso donde importa si es de día o de noche;
+  // el resto de los íconos de clima (nube, lluvia, nieve) sirven para ambos.
+  if (weatherCode === 0) return isDay ? "☀️" : "🌙";
+  return weatherCodeToEmoji(weatherCode);
 }
 
 function setFavicon(emoji: string) {
@@ -142,7 +149,8 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.lang = lang;
-  }, [lang]);
+    document.title = t.pageTitle;
+  }, [lang, t.pageTitle]);
 
   function toggleLang() {
     const next: Lang = lang === "es" ? "en" : "es";
@@ -152,7 +160,7 @@ export default function Home() {
 
   useEffect(() => {
     if (phase === "result" && result) {
-      setFavicon(result.current.isDay ? "☀️" : "🌙");
+      setFavicon(faviconEmojiFor(result.current.weatherCode, result.current.isDay));
     } else {
       setFavicon("☁️");
     }

@@ -10,6 +10,7 @@ export type DecisionColor = "green" | "yellow" | "red";
 
 export type ReasonKey =
   | "raining"
+  | "snowing"
   | "rainProb"
   | "humidExtreme"
   | "humidHigh"
@@ -36,6 +37,9 @@ const RAINING_CODES = new Set([
   51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99,
 ]);
 
+// Códigos WMO de nieve activa (nevada, chaparrones de nieve).
+const SNOWING_CODES = new Set([71, 73, 75, 77, 85, 86]);
+
 /**
  * Reglas if/then simples, no ML. Tres niveles según lluvia y humedad:
  * - rojo (NO): ya está lloviendo, hay buena chance de que llueva, o la
@@ -56,6 +60,7 @@ export function decide(
   const avgWindSpeed = avg(windowHours.map((h) => h.windSpeed));
 
   const isRainingNow = RAINING_CODES.has(currentWeatherCode);
+  const isSnowingNow = SNOWING_CODES.has(currentWeatherCode);
   const windReasonKey: ReasonKey | null =
     avgWindSpeed >= 5 && avgWindSpeed <= 30
       ? "windIdeal"
@@ -65,20 +70,28 @@ export function decide(
           ? "windStrong"
           : null;
 
-  if (isRainingNow || maxPrecipProbability >= 30 || avgHumidity >= 90) {
+  if (
+    isRainingNow ||
+    isSnowingNow ||
+    maxPrecipProbability >= 30 ||
+    avgHumidity >= 90
+  ) {
     return {
       decision: "NO",
       color: "red",
-      reasonKey: isRainingNow
-        ? "raining"
-        : avgHumidity >= 90
-          ? "humidExtreme"
-          : "rainProb",
-      reasonValue: isRainingNow
-        ? null
-        : avgHumidity >= 90
-          ? Math.round(avgHumidity)
-          : Math.round(maxPrecipProbability),
+      reasonKey: isSnowingNow
+        ? "snowing"
+        : isRainingNow
+          ? "raining"
+          : avgHumidity >= 90
+            ? "humidExtreme"
+            : "rainProb",
+      reasonValue:
+        isSnowingNow || isRainingNow
+          ? null
+          : avgHumidity >= 90
+            ? Math.round(avgHumidity)
+            : Math.round(maxPrecipProbability),
       maxPrecipProbability,
       avgHumidity,
       avgWindSpeed,
