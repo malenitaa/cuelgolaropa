@@ -68,6 +68,7 @@ function setFavicon(emoji: string) {
     link.rel = "icon";
     document.head.appendChild(link);
   }
+  link.type = "image/svg+xml";
   link.href = href;
 }
 

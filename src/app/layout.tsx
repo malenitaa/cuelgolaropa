@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "¿Cuelgo la ropa hoy?",
   description:
     "Una sola pregunta, una sola respuesta: ¿conviene colgar la ropa a secar hoy?",
-  icons: { icon: cloudFavicon },
+  icons: { icon: { url: cloudFavicon, type: "image/svg+xml" } },
 };
 
 export const viewport: Viewport = {
