@@ -23,7 +23,6 @@ interface OpenMeteoForecastResponse {
 }
 
 const WINDOW_SIZE = 8;
-const WEEKDAY_LETTERS = ["D", "L", "M", "X", "J", "V", "S"];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -31,19 +30,13 @@ export async function GET(request: NextRequest) {
   const lon = searchParams.get("lon");
 
   if (!lat || !lon) {
-    return NextResponse.json(
-      { error: "Faltan los parámetros lat y lon." },
-      { status: 400 }
-    );
+    return NextResponse.json({ errorKey: "missingCoords" }, { status: 400 });
   }
 
   const latitude = Number(lat);
   const longitude = Number(lon);
   if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
-    return NextResponse.json(
-      { error: "lat y lon deben ser números válidos." },
-      { status: 400 }
-    );
+    return NextResponse.json({ errorKey: "invalidCoords" }, { status: 400 });
   }
 
   const url = new URL("https://api.open-meteo.com/v1/forecast");
@@ -63,14 +56,14 @@ export async function GET(request: NextRequest) {
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) {
       return NextResponse.json(
-        { error: "El servicio de clima no respondió correctamente." },
+        { errorKey: "weatherServiceError" },
         { status: 502 }
       );
     }
     data = await res.json();
   } catch {
     return NextResponse.json(
-      { error: "No se pudo contactar al servicio de clima." },
+      { errorKey: "weatherServiceUnreachable" },
       { status: 502 }
     );
   }
@@ -93,7 +86,7 @@ export async function GET(request: NextRequest) {
 
   if (candidate.length === 0) {
     return NextResponse.json(
-      { error: "El servicio de clima no devolvió datos suficientes." },
+      { errorKey: "insufficientData" },
       { status: 502 }
     );
   }
@@ -116,7 +109,7 @@ export async function GET(request: NextRequest) {
     })),
     dailyPreview: daily.time.slice(1, 4).map((date, i) => ({
       day: Number(date.slice(8, 10)),
-      weekday: WEEKDAY_LETTERS[new Date(`${date}T00:00:00`).getDay()],
+      weekdayIndex: new Date(`${date}T00:00:00`).getDay(),
       weatherCode: daily.weather_code[i + 1],
     })),
   });

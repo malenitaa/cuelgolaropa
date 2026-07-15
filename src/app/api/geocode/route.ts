@@ -13,18 +13,16 @@ interface OpenMeteoGeocodingResponse {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const city = searchParams.get("city")?.trim();
+  const lang = searchParams.get("lang") === "en" ? "en" : "es";
 
   if (!city) {
-    return NextResponse.json(
-      { error: "Falta el parámetro city." },
-      { status: 400 }
-    );
+    return NextResponse.json({ errorKey: "missingCity" }, { status: 400 });
   }
 
   const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
   url.searchParams.set("name", city);
   url.searchParams.set("count", "1");
-  url.searchParams.set("language", "es");
+  url.searchParams.set("language", lang);
   url.searchParams.set("format", "json");
 
   let data: OpenMeteoGeocodingResponse;
@@ -32,14 +30,14 @@ export async function GET(request: NextRequest) {
     const res = await fetch(url.toString(), { cache: "no-store" });
     if (!res.ok) {
       return NextResponse.json(
-        { error: "El servicio de geocodificación no respondió correctamente." },
+        { errorKey: "geocodeServiceError" },
         { status: 502 }
       );
     }
     data = await res.json();
   } catch {
     return NextResponse.json(
-      { error: "No se pudo contactar al servicio de geocodificación." },
+      { errorKey: "geocodeServiceUnreachable" },
       { status: 502 }
     );
   }
@@ -47,7 +45,7 @@ export async function GET(request: NextRequest) {
   const match = data.results?.[0];
   if (!match) {
     return NextResponse.json(
-      { error: `No se encontró la ciudad "${city}".` },
+      { errorKey: "cityNotFound", detail: city },
       { status: 404 }
     );
   }
