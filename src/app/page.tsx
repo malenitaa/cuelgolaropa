@@ -268,7 +268,7 @@ export default function Home() {
               </span>
               <span className="text-2xl">{weatherCodeToEmoji(h.weatherCode)}</span>
               <span className="text-xs opacity-80">
-                {Math.round(h.precipitationProbability)}%
+                💧{Math.round(h.precipitationProbability)}%
               </span>
             </div>
           ))}
