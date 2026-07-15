@@ -354,84 +354,88 @@ export default function Home() {
           className={`${styles.chipBg} ${styles.text}`}
         />
         <div
-          className={`flex min-h-dvh flex-col items-center justify-center gap-5 px-6 py-10 text-center ${styles.bg}`}
+          className={`flex min-h-dvh flex-col px-6 py-10 text-center ${styles.bg}`}
         >
-          {locationLabel && (
-            <p
-              className={`text-sm font-medium uppercase tracking-wide ${styles.subtext}`}
-            >
-              {locationLabel}
-            </p>
-          )}
-          <h1
-            className={`text-[28vw] font-black leading-none drop-shadow-sm sm:text-[18vw] ${styles.text}`}
-          >
-            {isSi ? t.yes : t.no}
-          </h1>
-          <p className={`max-w-md text-lg font-medium sm:text-xl ${styles.text}`}>
-            {isSi ? t.canHang : t.cannotHang} —{" "}
-            {REASONS[lang][result.reasonKey](result.reasonValue)}
-          </p>
-          <div
-            className={`mt-1 flex gap-2 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
-          >
-            {result.hourlyPreview.map((h) => (
-              <div
-                key={h.time}
-                className={`flex flex-col items-center gap-0.5 ${styles.text}`}
+          <div className="flex flex-1 flex-col items-center justify-center gap-5">
+            {locationLabel && (
+              <p
+                className={`text-sm font-medium uppercase tracking-wide ${styles.subtext}`}
               >
-                <span className="text-[11px] font-medium opacity-80">
-                  {formatHour(h.time)}
-                </span>
-                <span className="text-lg">
-                  {weatherCodeToEmoji(h.weatherCode)}
-                </span>
-                <span className="text-[11px] opacity-80">
-                  💧{Math.round(h.precipitationProbability)}%
-                </span>
-              </div>
-            ))}
-          </div>
-          {showDaily ? (
-            <div
-              onClick={() => setShowDaily(false)}
-              className={`flex cursor-pointer gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
+                {locationLabel}
+              </p>
+            )}
+            <h1
+              className={`text-[24vw] font-black leading-none drop-shadow-sm sm:text-[14vw] ${styles.text}`}
             >
-              {result.dailyPreview.map((d) => (
+              {isSi ? t.yes : t.no}
+            </h1>
+            <p className={`max-w-md text-lg font-medium sm:text-xl ${styles.text}`}>
+              {isSi ? t.canHang : t.cannotHang} —{" "}
+              {REASONS[lang][result.reasonKey](result.reasonValue)}
+            </p>
+            <div
+              className={`mt-1 flex gap-2 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
+            >
+              {result.hourlyPreview.map((h) => (
                 <div
-                  key={d.day}
+                  key={h.time}
                   className={`flex flex-col items-center gap-0.5 ${styles.text}`}
                 >
-                  <span className="text-[11px] font-semibold opacity-80">
-                    {WEEKDAY_LETTERS[lang][d.weekdayIndex]}
+                  <span className="text-[11px] font-medium opacity-80">
+                    {formatHour(h.time)}
                   </span>
                   <span className="text-lg">
-                    {weatherCodeToEmoji(d.weatherCode)}
+                    {weatherCodeToEmoji(h.weatherCode)}
                   </span>
-                  <span className="text-[11px] opacity-80">{d.day}</span>
+                  <span className="text-[11px] opacity-80">
+                    💧{Math.round(h.precipitationProbability)}%
+                  </span>
                 </div>
               ))}
             </div>
-          ) : (
+          </div>
+          <div className="flex flex-col items-center gap-3 pb-2">
+            {showDaily ? (
+              <div
+                onClick={() => setShowDaily(false)}
+                className={`flex cursor-pointer gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
+              >
+                {result.dailyPreview.map((d) => (
+                  <div
+                    key={d.day}
+                    className={`flex flex-col items-center gap-0.5 ${styles.text}`}
+                  >
+                    <span className="text-[11px] font-semibold opacity-80">
+                      {WEEKDAY_LETTERS[lang][d.weekdayIndex]}
+                    </span>
+                    <span className="text-lg">
+                      {weatherCodeToEmoji(d.weatherCode)}
+                    </span>
+                    <span className="text-[11px] opacity-80">{d.day}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowDaily(true)}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text}`}
+              >
+                {t.viewNextDays}
+              </button>
+            )}
             <button
-              onClick={() => setShowDaily(true)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text}`}
+              onClick={() => {
+                setResult(null);
+                setLocationLabel(null);
+                setLastCityQuery(null);
+                setShowDaily(false);
+                setPhase("need-city");
+              }}
+              className={`text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
             >
-              {t.viewNextDays}
+              {t.tryAnotherCity}
             </button>
-          )}
-          <button
-            onClick={() => {
-              setResult(null);
-              setLocationLabel(null);
-              setLastCityQuery(null);
-              setShowDaily(false);
-              setPhase("need-city");
-            }}
-            className={`text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
-          >
-            {t.tryAnotherCity}
-          </button>
+          </div>
         </div>
       </>
     );
