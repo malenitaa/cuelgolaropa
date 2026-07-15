@@ -90,8 +90,36 @@ const COLOR_STYLES: Record<
   },
 };
 
+const COLOR_HEX: Record<DecisionColor, string> = {
+  green: "#10b981",
+  yellow: "#fbbf24",
+  red: "#e11d48",
+};
+
 function formatHour(iso: string) {
   return iso.slice(11, 16);
+}
+
+function setThemeColor(color: string) {
+  if (typeof document === "undefined") return;
+  // Next.js renders separate light/dark theme-color metas; collapse them
+  // into a single tag we fully control so there's no ambiguity about
+  // which one the browser picks.
+  const metas = document.querySelectorAll<HTMLMetaElement>(
+    "meta[name='theme-color']"
+  );
+  metas.forEach((m, i) => {
+    if (i > 0) m.remove();
+  });
+  let meta = metas[0];
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", "theme-color");
+    document.head.appendChild(meta);
+  } else {
+    meta.removeAttribute("media");
+  }
+  meta.content = color;
 }
 
 function faviconEmojiFor(weatherCode: number, isDay: boolean) {
@@ -202,6 +230,23 @@ export default function Home() {
     } else {
       setFavicon("☁️");
     }
+  }, [phase, result]);
+
+  useEffect(() => {
+    // Safari tints the area around its floating bottom bar using
+    // theme-color; without this it stays white/grey even when the result
+    // screen is green/amber/red, showing up as a mismatched blank strip.
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    function update() {
+      if (phase === "result" && result) {
+        setThemeColor(COLOR_HEX[result.color]);
+      } else {
+        setThemeColor(media.matches ? "#000000" : "#fafafa");
+      }
+    }
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, [phase, result]);
 
   useEffect(() => {
