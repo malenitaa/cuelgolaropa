@@ -15,6 +15,7 @@ interface HourlyPreviewItem {
 
 interface DailyPreviewItem {
   day: number;
+  weekday: string;
   weatherCode: number;
 }
 
@@ -274,12 +275,19 @@ export default function Home() {
         </div>
         {showDaily ? (
           <div
-            className={`flex items-center gap-3 text-sm font-medium ${styles.text}`}
+            className={`flex gap-4 rounded-2xl px-4 py-3 backdrop-blur-sm ${styles.chipBg}`}
           >
             {result.dailyPreview.map((d) => (
-              <span key={d.day} className="flex items-center gap-1">
-                {d.day} {weatherCodeToEmoji(d.weatherCode)}
-              </span>
+              <div
+                key={d.day}
+                className={`flex flex-col items-center gap-1 ${styles.text}`}
+              >
+                <span className="text-xs font-semibold opacity-80">
+                  {d.weekday}
+                </span>
+                <span className="text-2xl">{weatherCodeToEmoji(d.weatherCode)}</span>
+                <span className="text-xs opacity-80">{d.day}</span>
+              </div>
             ))}
           </div>
         ) : (

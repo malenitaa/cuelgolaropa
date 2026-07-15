@@ -26,7 +26,8 @@ const RAINING_CODES = new Set([
 
 /**
  * Reglas if/then simples, no ML. Tres niveles según lluvia y humedad:
- * - rojo (NO): ya está lloviendo o hay buena chance de que llueva.
+ * - rojo (NO): ya está lloviendo, hay buena chance de que llueva, o la
+ *   humedad es tan extrema (≥90%) que la ropa prácticamente no seca.
  * - amarillo (SÍ, con cuidado): no llueve pero la humedad es alta, tarda en secar.
  * - verde (SÍ): no llueve y la humedad es baja/media.
  * El viento no cambia el color, solo ajusta el motivo mostrado.
@@ -51,13 +52,15 @@ export function decide(
           ? "viento demasiado fuerte"
           : null;
 
-  if (isRainingNow || maxPrecipProbability >= 30) {
+  if (isRainingNow || maxPrecipProbability >= 30 || avgHumidity >= 90) {
     return {
       decision: "NO",
       color: "red",
       reason: isRainingNow
         ? "ya está lloviendo"
-        : `${Math.round(maxPrecipProbability)}% de probabilidad de lluvia`,
+        : avgHumidity >= 90
+          ? `humedad extrema (${Math.round(avgHumidity)}%), no va a secar`
+          : `${Math.round(maxPrecipProbability)}% de probabilidad de lluvia`,
       maxPrecipProbability,
       avgHumidity,
       avgWindSpeed,
