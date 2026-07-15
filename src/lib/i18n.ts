@@ -90,6 +90,8 @@ export const UI: Record<
     viewNextDays: string;
     canHang: string;
     cannotHang: string;
+    yes: string;
+    no: string;
   }
 > = {
   es: {
@@ -103,6 +105,8 @@ export const UI: Record<
     viewNextDays: "Ver próximos 3 días",
     canHang: "Podés colgar la ropa",
     cannotHang: "Mejor no cuelgues la ropa",
+    yes: "SÍ",
+    no: "NO",
   },
   en: {
     locating: "Finding your location…",
@@ -115,6 +119,8 @@ export const UI: Record<
     viewNextDays: "See next 3 days",
     canHang: "You can hang your laundry",
     cannotHang: "Better not hang your laundry",
+    yes: "YES",
+    no: "NO",
   },
 };
 
