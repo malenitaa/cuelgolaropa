@@ -183,6 +183,19 @@ export default function Home() {
     }
   }, [phase, result]);
 
+  useEffect(() => {
+    if (phase !== "result" || !result) return;
+    function handleKeydown(e: KeyboardEvent) {
+      if (e.code !== "Space") return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "BUTTON" || tag === "A") return;
+      e.preventDefault();
+      setShowDaily((prev) => !prev);
+    }
+    window.addEventListener("keydown", handleKeydown);
+    return () => window.removeEventListener("keydown", handleKeydown);
+  }, [phase, result]);
+
   const langRef = useRef(lang);
   useEffect(() => {
     langRef.current = lang;
