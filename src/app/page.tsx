@@ -117,7 +117,7 @@ function setFavicon(emoji: string) {
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
+    <div className="flex min-h-[var(--app-height)] flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
       {children}
     </div>
   );
@@ -159,6 +159,24 @@ export default function Home() {
 
   const t = UI[lang];
   const locationLabel = locationLabels ? locationLabels[lang] : null;
+
+  useEffect(() => {
+    // iOS Safari's dvh unit can get stuck at the wrong value on pages that
+    // never scroll (nothing triggers it to reconcile with the toolbar's
+    // current state), leaving a blank gap below the content. Track the
+    // real visible height ourselves via visualViewport/innerHeight instead.
+    function setAppHeight() {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--app-height", `${height}px`);
+    }
+    setAppHeight();
+    window.addEventListener("resize", setAppHeight);
+    window.visualViewport?.addEventListener("resize", setAppHeight);
+    return () => {
+      window.removeEventListener("resize", setAppHeight);
+      window.visualViewport?.removeEventListener("resize", setAppHeight);
+    };
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
@@ -407,7 +425,7 @@ export default function Home() {
           className={`${styles.chipBg} ${styles.text}`}
         />
         <div
-          className={`flex min-h-dvh flex-col px-6 py-10 text-center ${styles.bg}`}
+          className={`flex min-h-[var(--app-height)] flex-col px-6 py-10 text-center ${styles.bg}`}
         >
           <div className="flex flex-1 flex-col items-center justify-center gap-5">
             {locationLabel && (
