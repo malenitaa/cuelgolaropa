@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ¿Cuelgo la ropa hoy?
 
-## Getting Started
+Una sola pregunta, una sola respuesta gigante: **SÍ** o **NO** a colgar la ropa a secar hoy, según el clima de tu ubicación. Sin login, sin cuentas, sin configuración.
 
-First, run the development server:
+Inspirado en el estilo minimalista de [shouldideploy.today](https://shouldideploy.today/).
+
+## Qué hace
+
+1. Pide tu ubicación con la Geolocation API del navegador (si no la das o falla, pedís tu ciudad a mano).
+2. Consulta el pronóstico horario en [Open-Meteo](https://open-meteo.com/) (API gratuita, sin API key).
+3. Evalúa las próximas 6-8 horas de luz solar con reglas simples:
+   - Probabilidad de lluvia ≥ 30% → penaliza fuerte.
+   - Humedad relativa alta (> 75%, o > 60% moderado) → penaliza.
+   - Viento moderado (5-30 km/h) suma puntos; casi nulo o demasiado fuerte resta.
+   - Si ya se puso el sol o todavía no amaneció, la respuesta es directamente NO.
+4. Muestra SÍ (verde) o NO (rojo) bien grande, con el motivo principal y un mini-pronóstico de las próximas horas.
+
+## Stack
+
+Next.js (App Router) + TypeScript + Tailwind CSS. Todo corre en el cliente; dos route handlers (`/api/geocode` y `/api/weather`) llaman a Open-Meteo del lado del servidor. Sin base de datos, sin autenticación.
+
+## Correr local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrí [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Este proyecto se deploya gratis en [Vercel](https://vercel.com/new): importá el repo y confirmá, no necesita variables de entorno.
