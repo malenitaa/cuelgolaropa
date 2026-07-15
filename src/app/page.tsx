@@ -135,6 +135,7 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const [city, setCity] = useState("");
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
+  const [lastCityQuery, setLastCityQuery] = useState<string | null>(null);
   const [result, setResult] = useState<WeatherResult | null>(null);
   const [showDaily, setShowDaily] = useState(false);
 
@@ -152,10 +153,26 @@ export default function Home() {
     document.title = t.pageTitle;
   }, [lang, t.pageTitle]);
 
-  function toggleLang() {
+  async function toggleLang() {
     const next: Lang = lang === "es" ? "en" : "es";
     setLang(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
+
+    if (lastCityQuery) {
+      try {
+        const res = await fetch(
+          `/api/geocode?city=${encodeURIComponent(lastCityQuery)}&lang=${next}`
+        );
+        const data = await res.json();
+        if (res.ok) {
+          setLocationLabel(
+            [data.name, data.admin1, data.country].filter(Boolean).join(", ")
+          );
+        }
+      } catch {
+        // Cosmetic-only refresh; keep showing the previous label if this fails.
+      }
+    }
   }
 
   useEffect(() => {
@@ -241,6 +258,7 @@ export default function Home() {
       setLocationLabel(
         [data.name, data.admin1, data.country].filter(Boolean).join(", ")
       );
+      setLastCityQuery(trimmed);
       await fetchWeather(data.latitude, data.longitude);
     } catch {
       setErrorMessage(ERRORS[lang].networkError());
@@ -406,6 +424,7 @@ export default function Home() {
             onClick={() => {
               setResult(null);
               setLocationLabel(null);
+              setLastCityQuery(null);
               setShowDaily(false);
               setPhase("need-city");
             }}
