@@ -395,10 +395,12 @@ export default function Home() {
             </div>
           </div>
           <div className="flex flex-col items-center gap-3 pb-2">
-            {showDaily ? (
+            <div className="grid">
               <div
                 onClick={() => setShowDaily(false)}
-                className={`flex cursor-pointer gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
+                className={`col-start-1 row-start-1 flex place-self-center gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg} ${
+                  showDaily ? "cursor-pointer" : "invisible pointer-events-none"
+                }`}
               >
                 {result.dailyPreview.map((d) => (
                   <div
@@ -415,14 +417,15 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-            ) : (
               <button
                 onClick={() => setShowDaily(true)}
-                className={`rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text}`}
+                className={`col-start-1 row-start-1 place-self-center rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text} ${
+                  showDaily ? "invisible pointer-events-none" : ""
+                }`}
               >
                 {t.viewNextDays}
               </button>
-            )}
+            </div>
             <button
               onClick={() => {
                 setResult(null);
