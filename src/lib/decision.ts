@@ -11,13 +11,13 @@ export type DecisionColor = "green" | "yellow" | "red";
 export type ReasonKey =
   | "raining"
   | "snowing"
+  | "windDangerous"
   | "rainProb"
   | "humidExtreme"
   | "humidHigh"
   | "rainLater"
   | "windIdeal"
   | "windCalm"
-  | "windStrong"
   | "clear";
 
 export interface DecisionResult {
@@ -32,7 +32,8 @@ export interface DecisionResult {
 
 const avg = (nums: number[]) => nums.reduce((a, b) => a + b, 0) / nums.length;
 
-// Códigos WMO de precipitación activa (llovizna, lluvia, chaparrones, tormenta).
+// Códigos WMO de precipitación activa (llovizna, lluvia, chaparrones, tormenta,
+// incluye granizo: 96 y 99 son tormenta con granizo).
 const RAINING_CODES = new Set([
   51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99,
 ]);
@@ -40,13 +41,17 @@ const RAINING_CODES = new Set([
 // Códigos WMO de nieve activa (nevada, chaparrones de nieve).
 const SNOWING_CODES = new Set([71, 73, 75, 77, 85, 86]);
 
+// A partir de acá el viento puede volar/romper la ropa tendida (vendavales,
+// rachas de tormenta, huracanes, tifones), no solo "no ayuda a secar".
+const DANGEROUS_WIND_KMH = 50;
+
 /**
- * Reglas if/then simples, no ML. Tres niveles según lluvia y humedad:
- * - rojo (NO): ya está lloviendo, hay buena chance de que llueva, o la
- *   humedad es tan extrema (≥90%) que la ropa prácticamente no seca.
+ * Reglas if/then simples, no ML. Tres niveles según lluvia, viento y humedad:
+ * - rojo (NO): ya está lloviendo o nevando, el viento es peligroso, hay buena
+ *   chance de lluvia, o la humedad es tan extrema (≥90%) que la ropa
+ *   prácticamente no seca.
  * - amarillo (SÍ, con cuidado): no llueve pero la humedad es alta, tarda en secar.
- * - verde (SÍ): no llueve y la humedad es baja/media.
- * El viento no cambia el color, solo ajusta el motivo mostrado.
+ * - verde (SÍ): no llueve, el viento no es peligroso, y la humedad es baja/media.
  * Devuelve una reasonKey (no texto) para que el cliente la traduzca al idioma activo.
  */
 export function decide(
@@ -61,18 +66,12 @@ export function decide(
 
   const isRainingNow = RAINING_CODES.has(currentWeatherCode);
   const isSnowingNow = SNOWING_CODES.has(currentWeatherCode);
-  const windReasonKey: ReasonKey | null =
-    avgWindSpeed >= 5 && avgWindSpeed <= 30
-      ? "windIdeal"
-      : avgWindSpeed < 3
-        ? "windCalm"
-        : avgWindSpeed > 50
-          ? "windStrong"
-          : null;
+  const isDangerousWind = avgWindSpeed > DANGEROUS_WIND_KMH;
 
   if (
     isRainingNow ||
     isSnowingNow ||
+    isDangerousWind ||
     maxPrecipProbability >= 30 ||
     avgHumidity >= 90
   ) {
@@ -83,11 +82,13 @@ export function decide(
         ? "snowing"
         : isRainingNow
           ? "raining"
-          : avgHumidity >= 90
-            ? "humidExtreme"
-            : "rainProb",
+          : isDangerousWind
+            ? "windDangerous"
+            : avgHumidity >= 90
+              ? "humidExtreme"
+              : "rainProb",
       reasonValue:
-        isSnowingNow || isRainingNow
+        isSnowingNow || isRainingNow || isDangerousWind
           ? null
           : avgHumidity >= 90
             ? Math.round(avgHumidity)
@@ -112,6 +113,13 @@ export function decide(
       avgWindSpeed,
     };
   }
+
+  const windReasonKey: ReasonKey | null =
+    avgWindSpeed >= 5 && avgWindSpeed <= 30
+      ? "windIdeal"
+      : avgWindSpeed < 3
+        ? "windCalm"
+        : null;
 
   return {
     decision: "SI",

@@ -336,7 +336,7 @@ export default function Home() {
           className={`${styles.chipBg} ${styles.text}`}
         />
         <div
-          className={`flex min-h-dvh flex-col items-center justify-center gap-6 px-6 py-10 text-center ${styles.bg}`}
+          className={`flex min-h-dvh flex-col items-center justify-center gap-5 px-6 py-10 text-center ${styles.bg}`}
         >
           {locationLabel && (
             <p
@@ -350,25 +350,25 @@ export default function Home() {
           >
             {isSi ? t.yes : t.no}
           </h1>
-          <p className={`max-w-md text-xl font-medium sm:text-2xl ${styles.text}`}>
+          <p className={`max-w-md text-lg font-medium sm:text-xl ${styles.text}`}>
             {isSi ? t.canHang : t.cannotHang} —{" "}
             {REASONS[lang][result.reasonKey](result.reasonValue)}
           </p>
           <div
-            className={`mt-2 flex gap-3 rounded-2xl px-4 py-3 backdrop-blur-sm ${styles.chipBg}`}
+            className={`mt-1 flex gap-2 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
           >
             {result.hourlyPreview.map((h) => (
               <div
                 key={h.time}
-                className={`flex flex-col items-center gap-1 ${styles.text}`}
+                className={`flex flex-col items-center gap-0.5 ${styles.text}`}
               >
-                <span className="text-xs font-medium opacity-80">
+                <span className="text-[11px] font-medium opacity-80">
                   {formatHour(h.time)}
                 </span>
-                <span className="text-2xl">
+                <span className="text-lg">
                   {weatherCodeToEmoji(h.weatherCode)}
                 </span>
-                <span className="text-xs opacity-80">
+                <span className="text-[11px] opacity-80">
                   💧{Math.round(h.precipitationProbability)}%
                 </span>
               </div>
@@ -376,27 +376,28 @@ export default function Home() {
           </div>
           {showDaily ? (
             <div
-              className={`flex gap-4 rounded-2xl px-4 py-3 backdrop-blur-sm ${styles.chipBg}`}
+              onClick={() => setShowDaily(false)}
+              className={`flex cursor-pointer gap-3 rounded-2xl px-3 py-2 backdrop-blur-sm ${styles.chipBg}`}
             >
               {result.dailyPreview.map((d) => (
                 <div
                   key={d.day}
-                  className={`flex flex-col items-center gap-1 ${styles.text}`}
+                  className={`flex flex-col items-center gap-0.5 ${styles.text}`}
                 >
-                  <span className="text-xs font-semibold opacity-80">
+                  <span className="text-[11px] font-semibold opacity-80">
                     {WEEKDAY_LETTERS[lang][d.weekdayIndex]}
                   </span>
-                  <span className="text-2xl">
+                  <span className="text-lg">
                     {weatherCodeToEmoji(d.weatherCode)}
                   </span>
-                  <span className="text-xs opacity-80">{d.day}</span>
+                  <span className="text-[11px] opacity-80">{d.day}</span>
                 </div>
               ))}
             </div>
           ) : (
             <button
               onClick={() => setShowDaily(true)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium ${styles.chipBg} ${styles.text}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${styles.chipBg} ${styles.text}`}
             >
               {t.viewNextDays}
             </button>
@@ -408,7 +409,7 @@ export default function Home() {
               setShowDaily(false);
               setPhase("need-city");
             }}
-            className={`mt-4 text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
+            className={`text-sm font-medium underline underline-offset-4 ${styles.linkText}`}
           >
             {t.tryAnotherCity}
           </button>
