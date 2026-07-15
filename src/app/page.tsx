@@ -13,12 +13,18 @@ interface HourlyPreviewItem {
   temperature: number | null;
 }
 
+interface DailyPreviewItem {
+  day: number;
+  weatherCode: number;
+}
+
 interface WeatherResult {
   decision: "SI" | "NO";
   color: DecisionColor;
   reason: string;
   current: { isDay: boolean };
   hourlyPreview: HourlyPreviewItem[];
+  dailyPreview: DailyPreviewItem[];
 }
 
 const COLOR_STYLES: Record<
@@ -83,6 +89,7 @@ export default function Home() {
   const [city, setCity] = useState("");
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
   const [result, setResult] = useState<WeatherResult | null>(null);
+  const [showDaily, setShowDaily] = useState(false);
 
   useEffect(() => {
     if (phase === "result" && result) {
@@ -264,10 +271,29 @@ export default function Home() {
             </div>
           ))}
         </div>
+        {showDaily ? (
+          <div
+            className={`flex items-center gap-3 text-sm font-medium ${styles.text}`}
+          >
+            {result.dailyPreview.map((d) => (
+              <span key={d.day} className="flex items-center gap-1">
+                {d.day} {weatherCodeToEmoji(d.weatherCode)}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDaily(true)}
+            className={`rounded-full px-4 py-1.5 text-sm font-medium ${styles.chipBg} ${styles.text}`}
+          >
+            Ver próximos 3 días
+          </button>
+        )}
         <button
           onClick={() => {
             setResult(null);
             setLocationLabel(null);
+            setShowDaily(false);
             setPhase("need-city");
           }}
           className={`mt-4 text-sm font-medium underline underline-offset-4 ${styles.linkText}`}

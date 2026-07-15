@@ -16,6 +16,10 @@ interface OpenMeteoForecastResponse {
     weather_code: number[];
     temperature_2m: number[];
   };
+  daily: {
+    time: string[];
+    weather_code: number[];
+  };
 }
 
 const WINDOW_SIZE = 8;
@@ -48,9 +52,10 @@ export async function GET(request: NextRequest) {
     "hourly",
     "precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,temperature_2m"
   );
+  url.searchParams.set("daily", "weather_code");
   url.searchParams.set("current_weather", "true");
   url.searchParams.set("timezone", "auto");
-  url.searchParams.set("forecast_days", "1");
+  url.searchParams.set("forecast_days", "4");
 
   let data: OpenMeteoForecastResponse;
   try {
@@ -69,7 +74,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { current_weather, hourly } = data;
+  const { current_weather, hourly, daily } = data;
 
   let startIndex = hourly.time.findIndex((t) => t >= current_weather.time);
   if (startIndex === -1) startIndex = 0;
@@ -107,6 +112,10 @@ export async function GET(request: NextRequest) {
       precipitationProbability: h.precipitationProbability,
       weatherCode: h.weatherCode,
       temperature: hourly.temperature_2m[startIndex + i] ?? null,
+    })),
+    dailyPreview: daily.time.slice(1, 4).map((date, i) => ({
+      day: Number(date.slice(8, 10)),
+      weatherCode: daily.weather_code[i + 1],
     })),
   });
 }
