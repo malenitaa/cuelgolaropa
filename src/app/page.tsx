@@ -46,6 +46,21 @@ interface ApiError {
   detail?: string;
 }
 
+interface LocationLabels {
+  es: string;
+  en: string;
+}
+
+interface RawLocation {
+  name: string | null;
+  admin1: string | null;
+  country: string | null;
+}
+
+function buildLocationLabel(data: RawLocation) {
+  return [data.name, data.admin1, data.country].filter(Boolean).join(", ");
+}
+
 const COLOR_STYLES: Record<
   DecisionColor,
   { bg: string; text: string; subtext: string; chipBg: string; linkText: string }
@@ -134,12 +149,14 @@ export default function Home() {
   const [lang, setLang] = useState<Lang>("es");
   const [errorMessage, setErrorMessage] = useState("");
   const [city, setCity] = useState("");
-  const [locationLabel, setLocationLabel] = useState<string | null>(null);
-  const [lastCityQuery, setLastCityQuery] = useState<string | null>(null);
+  const [locationLabels, setLocationLabels] = useState<LocationLabels | null>(
+    null
+  );
   const [result, setResult] = useState<WeatherResult | null>(null);
   const [showDaily, setShowDaily] = useState(false);
 
   const t = UI[lang];
+  const locationLabel = locationLabels ? locationLabels[lang] : null;
 
   useEffect(() => {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
@@ -153,26 +170,10 @@ export default function Home() {
     document.title = t.pageTitle;
   }, [lang, t.pageTitle]);
 
-  async function toggleLang() {
+  function toggleLang() {
     const next: Lang = lang === "es" ? "en" : "es";
     setLang(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
-
-    if (lastCityQuery) {
-      try {
-        const res = await fetch(
-          `/api/geocode?city=${encodeURIComponent(lastCityQuery)}&lang=${next}`
-        );
-        const data = await res.json();
-        if (res.ok) {
-          setLocationLabel(
-            [data.name, data.admin1, data.country].filter(Boolean).join(", ")
-          );
-        }
-      } catch {
-        // Cosmetic-only refresh; keep showing the previous label if this fails.
-      }
-    }
   }
 
   useEffect(() => {
@@ -238,7 +239,24 @@ export default function Home() {
         if (settled) return;
         settled = true;
         clearTimeout(timeoutId);
-        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+        const { latitude, longitude } = pos.coords;
+        fetchWeather(latitude, longitude);
+        Promise.all([
+          fetch(`/api/reverse-geocode?lat=${latitude}&lon=${longitude}&lang=es`),
+          fetch(`/api/reverse-geocode?lat=${latitude}&lon=${longitude}&lang=en`),
+        ])
+          .then(async ([esRes, enRes]) => {
+            if (!esRes.ok || !enRes.ok) return;
+            const esData = (await esRes.json()) as RawLocation;
+            const enData = (await enRes.json()) as RawLocation;
+            setLocationLabels({
+              es: buildLocationLabel(esData),
+              en: buildLocationLabel(enData),
+            });
+          })
+          .catch(() => {
+            // Best-effort: no location label if reverse geocoding fails.
+          });
       },
       () => {
         if (settled) return;
@@ -258,21 +276,23 @@ export default function Home() {
     if (!trimmed) return;
     setPhase("loading");
     try {
-      const res = await fetch(
-        `/api/geocode?city=${encodeURIComponent(trimmed)}&lang=${lang}`
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        const err = data as ApiError;
+      const [esRes, enRes] = await Promise.all([
+        fetch(`/api/geocode?city=${encodeURIComponent(trimmed)}&lang=es`),
+        fetch(`/api/geocode?city=${encodeURIComponent(trimmed)}&lang=en`),
+      ]);
+      const esData = await esRes.json();
+      const enData = await enRes.json();
+      if (!esRes.ok || !enRes.ok) {
+        const err = (esRes.ok ? enData : esData) as ApiError;
         setErrorMessage(ERRORS[lang][err.errorKey](err.detail));
         setPhase("error");
         return;
       }
-      setLocationLabel(
-        [data.name, data.admin1, data.country].filter(Boolean).join(", ")
-      );
-      setLastCityQuery(trimmed);
-      await fetchWeather(data.latitude, data.longitude);
+      setLocationLabels({
+        es: buildLocationLabel(esData),
+        en: buildLocationLabel(enData),
+      });
+      await fetchWeather(esData.latitude, esData.longitude);
     } catch {
       setErrorMessage(ERRORS[lang].networkError());
       setPhase("error");
@@ -442,8 +462,7 @@ export default function Home() {
             <button
               onClick={() => {
                 setResult(null);
-                setLocationLabel(null);
-                setLastCityQuery(null);
+                setLocationLabels(null);
                 setShowDaily(false);
                 setPhase("need-city");
               }}
