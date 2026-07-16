@@ -15,9 +15,16 @@ interface OpenMeteoGeocodingResponse {
 }
 
 // Abreviaturas/alias que la gente escribe pero que no aparecen tal cual en los
-// campos admin1/admin2/country de Open-Meteo (que vienen de GeoNames).
+// campos admin1/admin2/country de Open-Meteo (que vienen de GeoNames). Open-Meteo
+// traduce esos campos según `language`, así que incluimos las variantes en
+// español e inglés sin importar qué idioma haya pedido el usuario.
 const QUALIFIER_ALIASES: Record<string, string[]> = {
-  caba: ["ciudad autonoma de buenos aires", "capital federal"],
+  caba: [
+    "ciudad autonoma de buenos aires",
+    "capital federal",
+    "buenos aires f.d.",
+    "autonomous city of buenos aires",
+  ],
 };
 
 const normalize = (s: string) =>
