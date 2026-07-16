@@ -130,6 +130,11 @@ function faviconEmojiFor(weatherCode: number, isDay: boolean) {
   return weatherCodeToEmoji(weatherCode);
 }
 
+function isDaytimeNow() {
+  const hour = new Date().getHours();
+  return hour >= 6 && hour < 20;
+}
+
 function setFavicon(emoji: string) {
   if (typeof document === "undefined") return;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
@@ -231,7 +236,7 @@ export default function Home() {
     if (phase === "result" && result) {
       setFavicon(faviconEmojiFor(result.current.weatherCode, result.current.isDay));
     } else {
-      setFavicon("☁️");
+      setFavicon(isDaytimeNow() ? "☀️" : "🌙");
     }
   }, [phase, result]);
 
