@@ -201,8 +201,16 @@ export default function Home() {
     // never scroll (nothing triggers it to reconcile with the toolbar's
     // current state), leaving a blank gap below the content. Track the
     // real visible height ourselves via visualViewport/innerHeight instead.
+    //
+    // visualViewport.height also shrinks when the user pinch-zooms on
+    // desktop Chrome/Safari (it reports the smaller visible slice of the
+    // page, with .scale > 1), even though the page's own layout viewport
+    // (innerHeight) hasn't changed. Following it in that case would shrink
+    // the color block to less than the full window, leaving the default
+    // background exposed around it — so only trust it while scale is ~1.
     function setAppHeight() {
-      const height = window.visualViewport?.height ?? window.innerHeight;
+      const vv = window.visualViewport;
+      const height = vv && vv.scale <= 1 ? vv.height : window.innerHeight;
       document.documentElement.style.setProperty("--app-height", `${height}px`);
     }
     setAppHeight();
