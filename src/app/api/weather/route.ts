@@ -23,6 +23,7 @@ interface OpenMeteoForecastResponse {
 }
 
 const WINDOW_SIZE = 8;
+const FETCH_TIMEOUT_MS = 8_000;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -35,7 +36,11 @@ export async function GET(request: NextRequest) {
 
   const latitude = Number(lat);
   const longitude = Number(lon);
-  if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+  if (
+    Number.isNaN(latitude) || Number.isNaN(longitude) ||
+    latitude < -90 || latitude > 90 ||
+    longitude < -180 || longitude > 180
+  ) {
     return NextResponse.json({ errorKey: "invalidCoords" }, { status: 400 });
   }
 
@@ -52,8 +57,13 @@ export async function GET(request: NextRequest) {
   url.searchParams.set("forecast_days", "4");
 
   let data: OpenMeteoForecastResponse;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url.toString(), { cache: "no-store" });
+    const res = await fetch(url.toString(), {
+      cache: "no-store",
+      signal: controller.signal,
+    });
     if (!res.ok) {
       return NextResponse.json(
         { errorKey: "weatherServiceError" },
@@ -66,6 +76,8 @@ export async function GET(request: NextRequest) {
       { errorKey: "weatherServiceUnreachable" },
       { status: 502 }
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   const { current_weather, hourly, daily } = data;
