@@ -54,6 +54,10 @@ function findMatch(
   );
 }
 
+const FETCH_TIMEOUT_MS = 8_000;
+const MAX_CITY_LENGTH = 200;
+const MAX_WORD_ITERATIONS = 5;
+
 async function searchOpenMeteo(
   name: string,
   lang: string
@@ -64,12 +68,21 @@ async function searchOpenMeteo(
   url.searchParams.set("language", lang);
   url.searchParams.set("format", "json");
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
-  if (!res.ok) {
-    throw new Error("geocodeServiceError");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url.toString(), {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      throw new Error("geocodeServiceError");
+    }
+    const data: OpenMeteoGeocodingResponse = await res.json();
+    return data.results ?? [];
+  } finally {
+    clearTimeout(timer);
   }
-  const data: OpenMeteoGeocodingResponse = await res.json();
-  return data.results ?? [];
 }
 
 export async function GET(request: NextRequest) {
@@ -78,6 +91,10 @@ export async function GET(request: NextRequest) {
   const lang = searchParams.get("lang") === "en" ? "en" : "es";
 
   if (!city) {
+    return NextResponse.json({ errorKey: "missingCity" }, { status: 400 });
+  }
+
+  if (city.length > MAX_CITY_LENGTH) {
     return NextResponse.json({ errorKey: "missingCity" }, { status: 400 });
   }
 
@@ -97,8 +114,10 @@ export async function GET(request: NextRequest) {
       // Sin coma: probamos la frase completa y, si no matchea nada, vamos
       // sacando la última palabra del nombre y usándola como calificador
       // ("Palermo CABA" -> nombre "Palermo", calificador "CABA").
+      // Capped at MAX_WORD_ITERATIONS to prevent O(n) upstream calls on long input.
       const words = city.split(/\s+/).filter(Boolean);
-      for (let i = words.length; i >= 1 && !match; i--) {
+      const startIdx = Math.max(1, words.length - MAX_WORD_ITERATIONS + 1);
+      for (let i = words.length; i >= startIdx && !match; i--) {
         const candidateName = words.slice(0, i).join(" ");
         const qualifier = i < words.length ? words.slice(i).join(" ") : null;
         const results = await searchOpenMeteo(candidateName, lang);
