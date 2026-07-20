@@ -136,6 +136,15 @@ function isDaytimeNow() {
   return hour >= 6 && hour < 20;
 }
 
+function isDaytimeAtLongitude(lon: number) {
+  // Sin timezone real todavía (estamos esperando la respuesta del clima),
+  // aproximamos la hora local de la ciudad buscada por su longitud
+  // (~15° por huso horario) en vez de usar la hora del navegador.
+  const utcHour = new Date().getUTCHours() + new Date().getUTCMinutes() / 60;
+  const localHour = (utcHour + lon / 15 + 24) % 24;
+  return localHour >= 6 && localHour < 20;
+}
+
 function setFavicon(emoji: string) {
   if (typeof document === "undefined") return;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
@@ -186,7 +195,7 @@ function LangToggle({
   return (
     <button
       onClick={onToggle}
-      className={`fixed top-3 right-3 z-10 rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}
+      className={`fixed top-3 right-3 z-10 flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}
     >
       {lang === "es" ? "EN" : "ES"}
     </button>
@@ -206,6 +215,7 @@ export default function Home() {
     null
   );
   const [result, setResult] = useState<WeatherResult | null>(null);
+  const [pendingLon, setPendingLon] = useState<number | null>(null);
   const [showDaily, setShowDaily] = useState(false);
   const [binaryToggled, setBinaryToggled] = useState(false);
   const [binaryHovered, setBinaryHovered] = useState(false);
@@ -260,10 +270,12 @@ export default function Home() {
   useEffect(() => {
     if (phase === "result" && result) {
       setFavicon(faviconEmojiFor(result.current.weatherCode, result.current.isDay));
+    } else if (pendingLon !== null) {
+      setFavicon(isDaytimeAtLongitude(pendingLon) ? "☀️" : "🌙");
     } else {
       setFavicon(isDaytimeNow() ? "☀️" : "🌙");
     }
-  }, [phase, result]);
+  }, [phase, result, pendingLon]);
 
   useEffect(() => {
     if (phase === "result" && result) {
@@ -324,6 +336,7 @@ export default function Home() {
   }, [lang]);
 
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
+    setPendingLon(lon);
     setPhase("loading");
     try {
       const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
