@@ -18,6 +18,7 @@ type Phase = "locating" | "need-city" | "loading" | "result" | "error";
 type DecisionColor = "green" | "yellow" | "red";
 
 const LANG_STORAGE_KEY = "cuelgolaropa-lang";
+const DEFAULT_CITY = { lat: -34.6037, lon: -58.3816 };
 
 interface HourlyPreviewItem {
   time: string;
@@ -149,6 +150,22 @@ function setFavicon(emoji: string) {
   link.href = href;
 }
 
+function setJsonLd(data: object | null) {
+  if (typeof document === "undefined") return;
+  const existing = document.querySelector<HTMLScriptElement>(
+    "script[data-dynamic-jsonld]"
+  );
+  if (!data) {
+    existing?.remove();
+    return;
+  }
+  const script = existing ?? document.createElement("script");
+  script.type = "application/ld+json";
+  script.setAttribute("data-dynamic-jsonld", "true");
+  script.textContent = JSON.stringify(data);
+  if (!existing) document.head.appendChild(script);
+}
+
 function Screen({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-[var(--app-height)] flex-col items-center justify-center gap-6 bg-zinc-50 px-6 py-10 dark:bg-black">
@@ -249,6 +266,25 @@ export default function Home() {
   }, [phase, result]);
 
   useEffect(() => {
+    if (phase === "result" && result) {
+      setJsonLd({
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: t.pageTitle,
+        dateModified: new Date().toISOString(),
+        about: {
+          "@type": "Answer",
+          text: `${result.decision === "SI" ? t.canHang : t.cannotHang}${
+            locationLabel ? ` — ${locationLabel}` : ""
+          }`,
+        },
+      });
+    } else {
+      setJsonLd(null);
+    }
+  }, [phase, result, t, locationLabel]);
+
+  useEffect(() => {
     // Safari tints the area around its floating bottom bar using
     // theme-color; without this it stays white/grey even when the result
     // screen is green/amber/red, showing up as a mismatched blank strip.
@@ -306,16 +342,40 @@ export default function Home() {
     }
   }, []);
 
+  const fetchLocationLabels = useCallback((lat: number, lon: number) => {
+    Promise.all([
+      fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=es`),
+      fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=en`),
+    ])
+      .then(async ([esRes, enRes]) => {
+        if (!esRes.ok || !enRes.ok) return;
+        const esData = (await esRes.json()) as RawLocation;
+        const enData = (await enRes.json()) as RawLocation;
+        setLocationLabels({
+          es: buildLocationLabel(esData),
+          en: buildLocationLabel(enData),
+        });
+      })
+      .catch(() => {
+        // Best-effort: no location label if reverse geocoding fails.
+      });
+  }, []);
+
+  const fetchDefaultCity = useCallback(() => {
+    fetchWeather(DEFAULT_CITY.lat, DEFAULT_CITY.lon);
+    fetchLocationLabels(DEFAULT_CITY.lat, DEFAULT_CITY.lon);
+  }, [fetchWeather, fetchLocationLabels]);
+
   useEffect(() => {
     if (!hasGeolocation()) {
-      const id = setTimeout(() => setPhase("need-city"), 0);
+      const id = setTimeout(() => fetchDefaultCity(), 0);
       return () => clearTimeout(id);
     }
     let settled = false;
     const timeoutId = setTimeout(() => {
       if (!settled) {
         settled = true;
-        setPhase("need-city");
+        fetchDefaultCity();
       }
     }, 10000);
 
@@ -326,34 +386,19 @@ export default function Home() {
         clearTimeout(timeoutId);
         const { latitude, longitude } = pos.coords;
         fetchWeather(latitude, longitude);
-        Promise.all([
-          fetch(`/api/reverse-geocode?lat=${latitude}&lon=${longitude}&lang=es`),
-          fetch(`/api/reverse-geocode?lat=${latitude}&lon=${longitude}&lang=en`),
-        ])
-          .then(async ([esRes, enRes]) => {
-            if (!esRes.ok || !enRes.ok) return;
-            const esData = (await esRes.json()) as RawLocation;
-            const enData = (await enRes.json()) as RawLocation;
-            setLocationLabels({
-              es: buildLocationLabel(esData),
-              en: buildLocationLabel(enData),
-            });
-          })
-          .catch(() => {
-            // Best-effort: no location label if reverse geocoding fails.
-          });
+        fetchLocationLabels(latitude, longitude);
       },
       () => {
         if (settled) return;
         settled = true;
         clearTimeout(timeoutId);
-        setPhase("need-city");
+        fetchDefaultCity();
       },
       { timeout: 9000, maximumAge: 5 * 60 * 1000 }
     );
 
     return () => clearTimeout(timeoutId);
-  }, [fetchWeather]);
+  }, [fetchWeather, fetchLocationLabels, fetchDefaultCity]);
 
   async function handleCitySubmit(e: React.FormEvent) {
     e.preventDefault();

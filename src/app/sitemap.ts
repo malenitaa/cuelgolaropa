@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: "https://cuelgolaropa.vercel.app",
+      url: "https://cuelgolaropa.ar",
       lastModified: new Date(),
-      changeFrequency: "daily",
+      changeFrequency: "hourly",
       priority: 1,
     },
   ];
