@@ -300,13 +300,23 @@ export default function Home() {
     // Safari tints the area around its floating bottom bar using
     // theme-color; without this it stays white/grey even when the result
     // screen is green/amber/red, showing up as a mismatched blank strip.
+    //
+    // body's own background stays white/black (see globals.css) since it's
+    // static CSS with no idea which color screen is showing. Whenever the
+    // screen doesn't exactly cover the visual viewport — under Safari's
+    // status bar/safe area, or for a frame during toolbar animations — the
+    // browser paints that gap with body's background, so we keep it in
+    // sync here too instead of leaving it white/black.
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     function update() {
-      if (phase === "result" && result) {
-        setThemeColor(COLOR_HEX[result.color]);
-      } else {
-        setThemeColor(media.matches ? "#000000" : "#fafafa");
-      }
+      const color =
+        phase === "result" && result
+          ? COLOR_HEX[result.color]
+          : media.matches
+            ? "#000000"
+            : "#fafafa";
+      setThemeColor(color);
+      document.body.style.backgroundColor = color;
     }
     update();
     media.addEventListener("change", update);
