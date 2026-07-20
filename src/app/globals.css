@@ -23,6 +23,13 @@
   }
 }
 
+html, body {
+  /* Stops iOS Safari's rubber-band bounce at the top/bottom of the page,
+     which otherwise briefly reveals html/body's background behind the
+     full-bleed color screen as a thin line. */
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
