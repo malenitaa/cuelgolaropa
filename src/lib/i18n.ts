@@ -3,7 +3,7 @@ import type { ReasonKey } from "@/lib/decision";
 export type Lang = "es" | "en";
 
 export const WEEKDAY_LETTERS: Record<Lang, string[]> = {
-  es: ["D", "L", "M", "X", "J", "V", "S"],
+  es: ["D", "L", "M", "M", "J", "V", "S"],
   en: ["S", "M", "T", "W", "T", "F", "S"],
 };
 
