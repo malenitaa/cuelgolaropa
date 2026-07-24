@@ -12,9 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const cloudFavicon =
-  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Ctext y=".9em" font-size="90"%3E%E2%98%81%EF%B8%8F%3C/text%3E%3C/svg%3E';
-
 const siteUrl = "https://cuelgolaropa.ar";
 const description =
   "Una sola pregunta, una sola respuesta: ¿conviene colgar la ropa a secar hoy? Basado en el pronóstico de tu ubicación.";
@@ -40,7 +37,6 @@ export const metadata: Metadata = {
     "va a llover",
   ],
   alternates: { canonical: siteUrl },
-  icons: { icon: { url: cloudFavicon, type: "image/svg+xml" } },
   openGraph: {
     title: "¿Cuelgo la ropa hoy?",
     description,
