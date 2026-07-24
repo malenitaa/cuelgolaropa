@@ -149,14 +149,16 @@ function setFavicon(emoji: string) {
   if (typeof document === "undefined") return;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`;
   const href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-  let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
-  if (!link) {
-    link = document.createElement("link");
-    link.rel = "icon";
-    document.head.appendChild(link);
-  }
+  // Safari no repinta el ícono de la pestaña si solo se muta el href de un
+  // <link> existente; hay que reemplazar el elemento para que lo note.
+  document
+    .querySelectorAll<HTMLLinkElement>("link[rel='icon']")
+    .forEach((el) => el.remove());
+  const link = document.createElement("link");
+  link.rel = "icon";
   link.type = "image/svg+xml";
   link.href = href;
+  document.head.appendChild(link);
 }
 
 function setJsonLd(data: object | null) {
