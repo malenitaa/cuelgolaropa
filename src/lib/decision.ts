@@ -6,16 +6,20 @@ export interface HourlyPoint {
   weatherCode: number;
 }
 
+export interface CurrentConditions {
+  weatherCode: number;
+  humidity: number;
+  windSpeed: number;
+}
+
 export type DecisionColor = "green" | "yellow" | "red";
 
 export type ReasonKey =
   | "raining"
   | "snowing"
   | "windDangerous"
-  | "rainProb"
   | "humidExtreme"
   | "humidHigh"
-  | "rainLater"
   | "windIdeal"
   | "windCalm"
   | "clear";
@@ -25,17 +29,13 @@ export interface DecisionResult {
   color: DecisionColor;
   reasonKey: ReasonKey;
   reasonValue: number | null;
-  // Hora (ISO) de la primera hora en la ventana "later" que empeoraría a rojo,
-  // o null si no se detectó ninguna. Solo se completa cuando la decisión
-  // principal es SI, para avisar "andá tendiendo ahora, pero traé la ropa
-  // antes de tal hora".
+  // Hora (ISO) de la primera hora del pronóstico que empeoraría a rojo, o null
+  // si no se detectó ninguna. Solo se completa cuando la decisión principal es
+  // SI, para avisar "andá tendiendo ahora, pero traé la ropa antes de tal hora".
   worsensAt: string | null;
-  maxPrecipProbability: number;
-  avgHumidity: number;
-  avgWindSpeed: number;
+  humidity: number;
+  windSpeed: number;
 }
-
-const avg = (nums: number[]) => nums.reduce((a, b) => a + b, 0) / nums.length;
 
 // Códigos WMO de precipitación activa (llovizna, lluvia, chaparrones, tormenta,
 // incluye granizo: 96 y 99 son tormenta con granizo).
@@ -50,56 +50,32 @@ const SNOWING_CODES = new Set([71, 73, 75, 77, 85, 86]);
 // rachas de tormenta, huracanes, tifones), no solo "no ayuda a secar".
 const DANGEROUS_WIND_KMH = 50;
 
-// Cuántas horas de la ventana cuentan como "ahora" para la decisión principal.
-// Es 1 (la hora actual sola) a propósito: con 3 horas, si la humedad ya subía
-// fuerte en la hora 2 o 3, ese promedio arrastraba la decisión a NO de una,
-// dejando el aviso de "empeora más tarde" para recién la hora 4 en adelante.
-// El resto de la ventana (desde la hora 1) solo se usa para avisar que va a
-// empeorar más tarde, no para tapar un buen momento actual con un promedio
-// de horas futuras.
-const NEAR_TERM_HOURS = 1;
-
 /**
  * Reglas if/then simples, no ML. Tres niveles según lluvia, viento y humedad:
- * - rojo (NO): ya está lloviendo o nevando, el viento es peligroso, hay buena
- *   chance de lluvia, o la humedad es tan extrema (≥90%) que la ropa
- *   prácticamente no seca.
+ * - rojo (NO): ya está lloviendo o nevando, el viento es peligroso, o la
+ *   humedad es tan extrema (≥90%) que la ropa prácticamente no seca.
  * - amarillo (SÍ, con cuidado): no llueve pero la humedad es alta, tarda en secar.
  * - verde (SÍ): no llueve, el viento no es peligroso, y la humedad es baja/media.
  * Devuelve una reasonKey (no texto) para que el cliente la traduzca al idioma activo.
  *
- * La decisión principal (SI/NO, color) sale solo de las primeras
- * NEAR_TERM_HOURS horas: "hace sol y viento ahora" no debería quedar tapado
- * por "va a estar nublado dentro de 6 horas". El resto de la ventana
- * (laterHours) se revisa aparte solo para detectar si en algún momento
- * posterior aparecerían las mismas condiciones de rojo, y en ese caso se
- * informa la hora en worsensAt sin bajar a NO la decisión de ahora.
+ * La decisión principal (SI/NO, color) sale de `current`, la lectura real de
+ * ahora (no un promedio del pronóstico horario) para que "hace sol y viento
+ * ahora" no quede tapado por un dato de pronóstico que no coincide con lo que
+ * se ve por la ventana. `laterHours` (el pronóstico horario de lo que viene)
+ * se revisa aparte solo para detectar si en algún momento posterior
+ * aparecerían las mismas condiciones de rojo, y en ese caso se informa la
+ * hora en worsensAt sin bajar a NO la decisión de ahora.
  */
 export function decide(
-  windowHours: HourlyPoint[],
-  currentWeatherCode: number
+  laterHours: HourlyPoint[],
+  current: CurrentConditions
 ): DecisionResult {
-  const nearTermHours = windowHours.slice(0, NEAR_TERM_HOURS);
-  const laterHours = windowHours.slice(NEAR_TERM_HOURS);
-
-  const maxPrecipProbability = Math.max(
-    ...nearTermHours.map((h) => h.precipitationProbability)
-  );
-  const avgHumidity = avg(nearTermHours.map((h) => h.humidity));
-  const avgWindSpeed = avg(nearTermHours.map((h) => h.windSpeed));
-
-  const isRainingNow = RAINING_CODES.has(currentWeatherCode);
-  const isSnowingNow = SNOWING_CODES.has(currentWeatherCode);
-  const isDangerousWind = avgWindSpeed > DANGEROUS_WIND_KMH;
+  const isRainingNow = RAINING_CODES.has(current.weatherCode);
+  const isSnowingNow = SNOWING_CODES.has(current.weatherCode);
+  const isDangerousWind = current.windSpeed > DANGEROUS_WIND_KMH;
   const worsensAt = findWorsenTime(laterHours);
 
-  if (
-    isRainingNow ||
-    isSnowingNow ||
-    isDangerousWind ||
-    maxPrecipProbability >= 30 ||
-    avgHumidity >= 90
-  ) {
+  if (isRainingNow || isSnowingNow || isDangerousWind || current.humidity >= 90) {
     return {
       decision: "NO",
       color: "red",
@@ -109,42 +85,33 @@ export function decide(
           ? "raining"
           : isDangerousWind
             ? "windDangerous"
-            : avgHumidity >= 90
-              ? "humidExtreme"
-              : "rainProb",
+            : "humidExtreme",
       reasonValue:
         isSnowingNow || isRainingNow || isDangerousWind
           ? null
-          : avgHumidity >= 90
-            ? Math.round(avgHumidity)
-            : Math.round(maxPrecipProbability),
+          : Math.round(current.humidity),
       worsensAt: null,
-      maxPrecipProbability,
-      avgHumidity,
-      avgWindSpeed,
+      humidity: current.humidity,
+      windSpeed: current.windSpeed,
     };
   }
 
-  if (avgHumidity > 75 || maxPrecipProbability >= 15) {
+  if (current.humidity > 75) {
     return {
       decision: "SI",
       color: "yellow",
-      reasonKey: avgHumidity > 75 ? "humidHigh" : "rainLater",
-      reasonValue:
-        avgHumidity > 75
-          ? Math.round(avgHumidity)
-          : Math.round(maxPrecipProbability),
+      reasonKey: "humidHigh",
+      reasonValue: Math.round(current.humidity),
       worsensAt,
-      maxPrecipProbability,
-      avgHumidity,
-      avgWindSpeed,
+      humidity: current.humidity,
+      windSpeed: current.windSpeed,
     };
   }
 
   const windReasonKey: ReasonKey | null =
-    avgWindSpeed >= 5 && avgWindSpeed <= 30
+    current.windSpeed >= 5 && current.windSpeed <= 30
       ? "windIdeal"
-      : avgWindSpeed < 3
+      : current.windSpeed < 3
         ? "windCalm"
         : null;
 
@@ -154,9 +121,8 @@ export function decide(
     reasonKey: windReasonKey ?? "clear",
     reasonValue: null,
     worsensAt,
-    maxPrecipProbability,
-    avgHumidity,
-    avgWindSpeed,
+    humidity: current.humidity,
+    windSpeed: current.windSpeed,
   };
 }
 

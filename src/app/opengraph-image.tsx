@@ -23,7 +23,12 @@ const COLOR_HEX = {
 } as const;
 
 interface OpenMeteoResponse {
-  current_weather: { time: string; weathercode: number };
+  current: {
+    time: string;
+    relative_humidity_2m: number;
+    weather_code: number;
+    wind_speed_10m: number;
+  };
   hourly: {
     time: string[];
     precipitation_probability: number[];
@@ -38,10 +43,13 @@ async function getBuenosAiresDecision() {
   url.searchParams.set("latitude", String(BA_LATITUDE));
   url.searchParams.set("longitude", String(BA_LONGITUDE));
   url.searchParams.set(
+    "current",
+    "relative_humidity_2m,weather_code,wind_speed_10m"
+  );
+  url.searchParams.set(
     "hourly",
     "precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code"
   );
-  url.searchParams.set("current_weather", "true");
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("forecast_days", "1");
 
@@ -49,12 +57,11 @@ async function getBuenosAiresDecision() {
   if (!res.ok) throw new Error("weather service error");
   const data: OpenMeteoResponse = await res.json();
 
-  let startIndex = data.hourly.time.findIndex(
-    (t) => t >= data.current_weather.time
-  );
+  let startIndex = data.hourly.time.findIndex((t) => t >= data.current.time);
   if (startIndex === -1) startIndex = 0;
+  if (data.hourly.time[startIndex] === data.current.time) startIndex += 1;
 
-  const windowHours: HourlyPoint[] = data.hourly.time
+  const laterHours: HourlyPoint[] = data.hourly.time
     .slice(startIndex, startIndex + 8)
     .map((time, i) => ({
       time,
@@ -65,9 +72,11 @@ async function getBuenosAiresDecision() {
       weatherCode: data.hourly.weather_code[startIndex + i] ?? 0,
     }));
 
-  if (windowHours.length === 0) throw new Error("insufficient data");
-
-  return decide(windowHours, data.current_weather.weathercode);
+  return decide(laterHours, {
+    weatherCode: data.current.weather_code,
+    humidity: data.current.relative_humidity_2m,
+    windSpeed: data.current.wind_speed_10m,
+  });
 }
 
 export default async function Image() {
