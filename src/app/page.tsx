@@ -9,6 +9,7 @@ import {
   REASONS,
   ERRORS,
   WEEKDAY_LETTERS,
+  LATER_WARNING,
   detectLang,
   type Lang,
   type ErrorKey,
@@ -38,6 +39,7 @@ interface WeatherResult {
   color: DecisionColor;
   reasonKey: ReasonKey;
   reasonValue: number | null;
+  worsensAt?: string | null;
   customReason?: { es: string; en: string };
   binaryMode?: boolean;
   current: { isDay: boolean; weatherCode: number };
@@ -558,6 +560,10 @@ export default function Home() {
       result.customReason
         ? result.customReason[lang]
         : REASONS[lang][result.reasonKey](result.reasonValue)
+    }${
+      isSi && result.worsensAt
+        ? ` ${LATER_WARNING[lang](formatHour(result.worsensAt))}`
+        : ""
     }`;
     const isBinaryHidden =
       !!result.binaryMode && !binaryToggled && !binaryHovered;
