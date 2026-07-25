@@ -51,10 +51,13 @@ const SNOWING_CODES = new Set([71, 73, 75, 77, 85, 86]);
 const DANGEROUS_WIND_KMH = 50;
 
 // Cuántas horas de la ventana cuentan como "ahora" para la decisión principal.
-// El resto de la ventana (hasta WINDOW_SIZE) solo se usa para avisar que va a
+// Es 1 (la hora actual sola) a propósito: con 3 horas, si la humedad ya subía
+// fuerte en la hora 2 o 3, ese promedio arrastraba la decisión a NO de una,
+// dejando el aviso de "empeora más tarde" para recién la hora 4 en adelante.
+// El resto de la ventana (desde la hora 1) solo se usa para avisar que va a
 // empeorar más tarde, no para tapar un buen momento actual con un promedio
 // de horas futuras.
-const NEAR_TERM_HOURS = 3;
+const NEAR_TERM_HOURS = 1;
 
 /**
  * Reglas if/then simples, no ML. Tres niveles según lluvia, viento y humedad:
