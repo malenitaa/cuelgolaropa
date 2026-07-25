@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { decide, type HourlyPoint } from "@/lib/decision";
 
 interface OpenMeteoForecastResponse {
-  current_weather: {
+  current: {
     time: string;
-    temperature: number;
-    weathercode: number;
+    temperature_2m: number;
+    relative_humidity_2m: number;
+    weather_code: number;
+    wind_speed_10m: number;
     is_day: 0 | 1;
   };
   hourly: {
@@ -48,11 +50,14 @@ export async function GET(request: NextRequest) {
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
   url.searchParams.set(
+    "current",
+    "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day"
+  );
+  url.searchParams.set(
     "hourly",
     "precipitation_probability,relative_humidity_2m,wind_speed_10m,weather_code,temperature_2m"
   );
   url.searchParams.set("daily", "weather_code");
-  url.searchParams.set("current_weather", "true");
   url.searchParams.set("timezone", "auto");
   url.searchParams.set("forecast_days", "4");
 
@@ -80,12 +85,16 @@ export async function GET(request: NextRequest) {
     clearTimeout(timer);
   }
 
-  const { current_weather, hourly, daily } = data;
+  const { current, hourly, daily } = data;
 
-  let startIndex = hourly.time.findIndex((t) => t >= current_weather.time);
+  let startIndex = hourly.time.findIndex((t) => t >= current.time);
   if (startIndex === -1) startIndex = 0;
+  // `current` ya cubre "ahora" con una lectura real; si el pronóstico horario
+  // tiene un balde que coincide con esa misma hora, lo salteamos para que
+  // laterHours arranque estrictamente después de ahora.
+  if (hourly.time[startIndex] === current.time) startIndex += 1;
 
-  const candidate: HourlyPoint[] = hourly.time
+  const laterHours: HourlyPoint[] = hourly.time
     .slice(startIndex, startIndex + WINDOW_SIZE)
     .map((time, i) => ({
       time,
@@ -96,24 +105,21 @@ export async function GET(request: NextRequest) {
       weatherCode: hourly.weather_code[startIndex + i] ?? 0,
     }));
 
-  if (candidate.length === 0) {
-    return NextResponse.json(
-      { errorKey: "insufficientData" },
-      { status: 502 }
-    );
-  }
-
-  const result = decide(candidate, current_weather.weathercode);
+  const result = decide(laterHours, {
+    weatherCode: current.weather_code,
+    humidity: current.relative_humidity_2m,
+    windSpeed: current.wind_speed_10m,
+  });
 
   return NextResponse.json({
     ...result,
     current: {
-      time: current_weather.time,
-      temperature: current_weather.temperature,
-      weatherCode: current_weather.weathercode,
-      isDay: current_weather.is_day === 1,
+      time: current.time,
+      temperature: current.temperature_2m,
+      weatherCode: current.weather_code,
+      isDay: current.is_day === 1,
     },
-    hourlyPreview: candidate.slice(0, 6).map((h, i) => ({
+    hourlyPreview: laterHours.slice(0, 6).map((h, i) => ({
       time: h.time,
       precipitationProbability: h.precipitationProbability,
       weatherCode: h.weatherCode,
