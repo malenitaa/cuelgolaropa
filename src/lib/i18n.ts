@@ -37,6 +37,11 @@ export const REASONS: Record<
   },
 };
 
+export const LATER_WARNING: Record<Lang, (time: string) => string> = {
+  es: (time) => `Va a empeorar después de las ${time} — traé la ropa antes.`,
+  en: (time) => `It'll get worse after ${time} — bring your laundry in before then.`,
+};
+
 export type ErrorKey =
   | "missingCoords"
   | "invalidCoords"
