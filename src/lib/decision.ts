@@ -126,14 +126,17 @@ export function decide(
   };
 }
 
+// Que suba la humedad de noche no es "empeorar" (oscurecer no es negativo:
+// hay gente que cuelga la ropa de noche igual), así que el aviso de más
+// tarde solo se dispara por lluvia/nieve real o viento peligroso, no por
+// humedad.
 function findWorsenTime(hours: HourlyPoint[]): string | null {
   const bad = hours.find(
     (h) =>
       RAINING_CODES.has(h.weatherCode) ||
       SNOWING_CODES.has(h.weatherCode) ||
       h.windSpeed > DANGEROUS_WIND_KMH ||
-      h.precipitationProbability >= 30 ||
-      h.humidity >= 90
+      h.precipitationProbability >= 30
   );
   return bad ? bad.time : null;
 }
