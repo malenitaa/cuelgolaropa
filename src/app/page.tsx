@@ -562,7 +562,7 @@ export default function Home() {
         : REASONS[lang][result.reasonKey](result.reasonValue)
     }${
       isSi && result.worsensAt
-        ? ` ${LATER_WARNING[lang](formatHour(result.worsensAt))}`
+        ? `. ${LATER_WARNING[lang](formatHour(result.worsensAt))}`
         : ""
     }`;
     const isBinaryHidden =
