@@ -94,6 +94,15 @@ export async function GET(request: NextRequest) {
   // laterHours arranque estrictamente después de ahora.
   if (hourly.time[startIndex] === current.time) startIndex += 1;
 
+  // El weather_code de `current` a veces no detecta llovizna/nevisca liviana
+  // que el balde horario correspondiente a esta misma hora sí marca (reporta
+  // "nublado" mientras hourly ya tiene código de lluvia). Se lo pasa a decide
+  // como respaldo.
+  const currentHourTime = current.time.slice(0, 13) + ":00";
+  const currentHourIndex = hourly.time.indexOf(currentHourTime);
+  const hourlyWeatherCodeNow =
+    currentHourIndex !== -1 ? hourly.weather_code[currentHourIndex] : undefined;
+
   const laterHours: HourlyPoint[] = hourly.time
     .slice(startIndex, startIndex + WINDOW_SIZE)
     .map((time, i) => ({
@@ -109,6 +118,7 @@ export async function GET(request: NextRequest) {
     weatherCode: current.weather_code,
     humidity: current.relative_humidity_2m,
     windSpeed: current.wind_speed_10m,
+    hourlyWeatherCode: hourlyWeatherCodeNow,
   });
 
   return NextResponse.json({

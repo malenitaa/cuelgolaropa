@@ -10,6 +10,11 @@ export interface CurrentConditions {
   weatherCode: number;
   humidity: number;
   windSpeed: number;
+  // weather_code del pronóstico horario para esta misma hora. El diagnóstico
+  // "current" de Open-Meteo a veces no detecta llovizna/nevisca liviana que
+  // el pronóstico horario sí marca (reporta "nublado" mientras afuera está
+  // lloviendo); si el horario marca lluvia/nieve, se lo toma como válido.
+  hourlyWeatherCode?: number;
 }
 
 export type DecisionColor = "green" | "yellow" | "red";
@@ -70,8 +75,14 @@ export function decide(
   laterHours: HourlyPoint[],
   current: CurrentConditions
 ): DecisionResult {
-  const isRainingNow = RAINING_CODES.has(current.weatherCode);
-  const isSnowingNow = SNOWING_CODES.has(current.weatherCode);
+  const isRainingNow =
+    RAINING_CODES.has(current.weatherCode) ||
+    (current.hourlyWeatherCode !== undefined &&
+      RAINING_CODES.has(current.hourlyWeatherCode));
+  const isSnowingNow =
+    SNOWING_CODES.has(current.weatherCode) ||
+    (current.hourlyWeatherCode !== undefined &&
+      SNOWING_CODES.has(current.hourlyWeatherCode));
   const isDangerousWind = current.windSpeed > DANGEROUS_WIND_KMH;
   const worsensAt = findWorsenTime(laterHours);
 
