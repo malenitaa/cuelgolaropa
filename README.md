@@ -1,59 +1,61 @@
 # ¿Cuelgo la ropa hoy?
 
-Una sola pregunta, una sola respuesta gigante: **SÍ** o **NO** a colgar la ropa a secar hoy, según el clima de tu ubicación. Sin login, sin cuentas, sin configuración.
+[![Sitio en vivo](https://img.shields.io/badge/sitio-en%20vivo-6b46c1)](https://cuelgolaropa.ar)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Inspirado en el estilo minimalista de [shouldideploy.today](https://shouldideploy.today/).
+**¿Hoy es un buen día para colgar la ropa a secar?** Sitio web gratuito
+que responde con una sola palabra gigante — **SÍ** o **NO** — según el
+clima de tu ubicación en este momento. Sin login, sin cuentas, sin
+configuración.
 
-## Qué hace
+## Usarlo
 
-1. Pide tu ubicación con la Geolocation API del navegador; si no la das o falla, pedís tu ciudad a mano.
-2. Consulta el pronóstico horario en [Open-Meteo](https://open-meteo.com/) (API gratuita, sin API key).
-3. Evalúa las próximas horas con reglas simples (si-entonces, no ML):
-   - Ya está lloviendo/nevando ahora, o probabilidad de lluvia ≥ 30% → **rojo / NO**.
-   - Viento > 50 km/h (vendaval/huracán) → **rojo / NO**, la ropa se puede volar.
-   - Humedad ≥ 90% → **rojo / NO**, prácticamente no seca.
-   - Humedad > 75%, o probabilidad de lluvia 15–29% → **amarillo / SÍ con cuidado**.
-   - Resto de los casos → **verde / SÍ**.
-4. Muestra el resultado bien grande con color, el motivo principal, mini-pronóstico de las próximas horas, y un toggle para ver los próximos 3 días.
-5. Todo en español o inglés: detecta el idioma del navegador y tiene un toggle manual (ES/EN) que persiste en `localStorage`.
+No hay que instalar nada — es una página web. Entrá directo a:
 
-## Arquitectura
+### 👉 [cuelgolaropa.ar](https://cuelgolaropa.ar)
 
-Next.js (App Router) + TypeScript + Tailwind CSS v4. Todo el estado vive en un único client component; no hay base de datos ni autenticación.
+Te va a pedir tu ubicación (o podés escribir tu ciudad a mano) y te
+muestra la respuesta en grande, con el motivo y el pronóstico de las
+próximas horas. Funciona igual en el celular que en la computadora, y
+está disponible en español e inglés.
 
-```
-src/
-├── app/
-│   ├── page.tsx              # Toda la UI y el flujo de estados (locating → need-city → loading → result/error)
-│   ├── layout.tsx            # Metadata, favicon estático de fallback, viewport
-│   ├── globals.css           # Tailwind + fallback de --app-height
-│   ├── robots.ts / sitemap.ts
-│   └── api/
-│       ├── weather/route.ts        # Llama a Open-Meteo forecast, corre decide(), devuelve JSON sin texto (solo claves)
-│       ├── geocode/route.ts        # Ciudad → lat/lon (Open-Meteo geocoding), acepta ?lang=es|en
-│       └── reverse-geocode/route.ts # lat/lon → nombre de ciudad (BigDataCloud, gratis sin API key)
-└── lib/
-    ├── decision.ts    # decide(): la lógica pura de SÍ/NO/color. Devuelve reasonKey + reasonValue, no texto
-    ├── i18n.ts        # Diccionarios ES/EN: UI, REASONS (traduce reasonKey), ERRORS (traduce errorKey), letras de días
-    ├── easterEggs.ts  # Ciudades ficticias (Tatooine, Hogwarts, Mordor, etc.) que devuelven un resultado canned sin pegarle a ninguna API
-    └── weatherCodes.ts # Códigos WMO → emoji
-```
+## Preguntas frecuentes
 
-**Por qué las rutas API no devuelven texto**: `decide()` devuelve una `reasonKey` (ej. `"humidHigh"`) y un `reasonValue` numérico, no un string armado en el servidor. Los textos reales viven todos en `src/lib/i18n.ts` y se arman en el cliente según el idioma activo. Esto permite que el toggle ES/EN sea instantáneo (sin refetch) para todo excepto el nombre de la ciudad, que sí se pide una vez en ambos idiomas en paralelo al buscar (`Promise.all`) y se cachea en memoria.
+**¿Necesito crear una cuenta?**
+No, no hay cuentas, ni login, ni nada parecido.
 
-**Altura de pantalla en iOS Safari**: `min-h-dvh` puede quedar pegado a un valor viejo en páginas que nunca hacen scroll. `page.tsx` calcula `--app-height` con `window.visualViewport`/`innerHeight` y lo actualiza en cada resize; también sincroniza `<meta name="theme-color">` con el color de fondo actual para que la barra flotante de Safari no quede blanca sobre un resultado verde/rojo/amarillo.
+**¿Manda mis datos a algún lado?**
+No. Tu ubicación se usa una sola vez, en el momento, para consultar el
+clima — no se guarda en ningún lado.
 
-**Easter eggs**: buscar "Tatooine", "Hogwarts", "Mordor", etc. corta el flujo antes de llamar a las APIs reales y devuelve un resultado fijo bilingüe (ver `findEasterEgg` en `easterEggs.ts`). "Zion"/"Matrix" es especial: todo el texto se muestra codificado en binario por defecto, y se decodifica pasando el mouse por encima (momentáneo) o con la barra espaciadora (toggle persistente).
+**¿De dónde sale el clima?**
+De [Open-Meteo](https://open-meteo.com/), una fuente pública y gratuita
+de pronóstico meteorológico.
 
-## Correr local
+**¿Es gratis?**
+Sí, y no tiene publicidad ni ningún costo oculto.
+
+## Para desarrolladores
+
+Requisitos: [Node.js](https://nodejs.org/) 20+. No hace falta ninguna
+API key ni cuenta.
 
 ```bash
+git clone https://github.com/malenitaa/cuelgolaropa.git
+cd cuelgolaropa
 npm install
 npm run dev
 ```
 
 Abrí [http://localhost:3000](http://localhost:3000).
 
-## Deploy
+## ¿Te sirvió?
 
-Se deploya gratis en [Vercel](https://vercel.com/new): importá el repo y confirmá, no necesita variables de entorno.
+Si te resultó útil y querés bancar el proyecto:
+
+- [Cafecito](https://cafecito.app/rezamalena)
+- [Ko-fi](https://ko-fi.com/malenitaa)
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).

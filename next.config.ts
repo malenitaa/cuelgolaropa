@@ -14,9 +14,26 @@ const securityHeaders = [
   },
 ];
 
+const CANONICAL_HOST = "cuelgolaropa.ar";
+const VERCEL_HOST = "cuelgolaropa-maleneadas.vercel.app";
+
 const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
+  },
+
+  async redirects() {
+    return [
+      {
+        // Redirect the Vercel preview URL to the canonical domain so it
+        // doesn't act as a live bypass for HSTS, SEO canonicals, and any
+        // other domain-scoped security policy.
+        source: "/:path*",
+        has: [{ type: "host", value: VERCEL_HOST }],
+        destination: `https://${CANONICAL_HOST}/:path*`,
+        permanent: true,
+      },
+    ];
   },
 };
 
