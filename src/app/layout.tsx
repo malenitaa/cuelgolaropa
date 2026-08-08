@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 const siteUrl = "https://cuelgolaropa.ar";
 const description =
-  "Una sola pregunta, una sola respuesta: ¿conviene colgar la ropa a secar hoy? Basado en el pronóstico de tu ubicación.";
+      "SI o NO: respuesta instantánea y gratis según el pronóstico de tu ubicación. Sin cuentas, sin anuncios, sin vueltas.";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -27,7 +27,7 @@ const jsonLd = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "¿Cuelgo la ropa hoy?",
+      title: "¿Cuelgo la ropa hoy? SÍ o NO según el clima",
   description,
   keywords: [
     "colgar la ropa",
