@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Archivos privados locales (nunca se suben al repo)
 README.privado.md
+
+# Doc interna (repo público)
+docs/interno/

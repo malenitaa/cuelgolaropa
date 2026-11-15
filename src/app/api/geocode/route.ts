@@ -78,8 +78,15 @@ async function searchOpenMeteo(
     if (!res.ok) {
       throw new Error("geocodeServiceError");
     }
-    const data: OpenMeteoGeocodingResponse = await res.json();
-    return data.results ?? [];
+    const data: OpenMeteoGeocodingResponse | null = await res.json();
+    // Un resultado sin coordenadas no sirve para pedir el clima.
+    return (data?.results ?? []).filter(
+      (r) =>
+        typeof r === "object" &&
+        r !== null &&
+        Number.isFinite(r.latitude) &&
+        Number.isFinite(r.longitude)
+    );
   } finally {
     clearTimeout(timer);
   }

@@ -85,7 +85,29 @@ export async function GET(request: NextRequest) {
     clearTimeout(timer);
   }
 
+  // Open-Meteo puede responder 200 con otra forma, o un proxy devolver
+  // cualquier cosa: sin la estructura mínima, es un error del servicio.
+  if (!hasForecastShape(data)) {
+    return NextResponse.json(
+      { errorKey: "weatherServiceError" },
+      { status: 502 }
+    );
+  }
+
   const { current, hourly, daily } = data;
+
+  // Sin humedad, viento o código de ahora, las reglas dirían SÍ con datos
+  // que faltan; mejor no responder.
+  if (
+    !Number.isFinite(current.relative_humidity_2m) ||
+    !Number.isFinite(current.wind_speed_10m) ||
+    !Number.isFinite(current.weather_code)
+  ) {
+    return NextResponse.json(
+      { errorKey: "insufficientData" },
+      { status: 502 }
+    );
+  }
 
   let startIndex = hourly.time.findIndex((t) => t >= current.time);
   if (startIndex === -1) startIndex = 0;
@@ -145,4 +167,14 @@ export async function GET(request: NextRequest) {
     // piden la misma URL y la CDN la sirve sin volver a llamar a Open-Meteo.
     headers: { "Cache-Control": "public, s-maxage=600" },
   });
+}
+
+function hasForecastShape(data: unknown): data is OpenMeteoForecastResponse {
+  if (typeof data !== "object" || data === null) return false;
+  const { current, hourly, daily } = data as Partial<OpenMeteoForecastResponse>;
+  return (
+    typeof current?.time === "string" &&
+    Array.isArray(hourly?.time) &&
+    Array.isArray(daily?.time)
+  );
 }

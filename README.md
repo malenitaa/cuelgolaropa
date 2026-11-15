@@ -25,9 +25,11 @@ está disponible en español e inglés.
 No, no hay cuentas, ni login, ni nada parecido.
 
 **¿Manda mis datos a algún lado?**
-Solo lo justo para responder, y no se guarda. El sitio no tiene base de
-datos ni cookies: lo único que queda en tu navegador es el idioma que
-elegiste.
+Solo lo justo para responder. El sitio no tiene base de datos ni cookies:
+lo único que queda en tu navegador es el idioma que elegiste. Lo que sí
+puede quedar un tiempo son los registros de acceso de Vercel (donde está
+alojado el sitio), que incluyen la ubicación aproximada o la ciudad que
+escribiste, porque viajan en la dirección del pedido.
 
 Para responder, el sitio consulta dos servicios externos:
 
@@ -49,8 +51,8 @@ Sí, y no tiene publicidad ni ningún costo oculto.
 
 ## Para desarrolladores
 
-Requisitos: [Node.js](https://nodejs.org/) 20+. No hace falta ninguna
-API key ni cuenta.
+Requisitos: [Node.js](https://nodejs.org/) 22.12 o más (la CI usa 24).
+No hace falta ninguna API key ni cuenta.
 
 ```bash
 git clone https://github.com/malenitaa/cuelgolaropa.git
@@ -60,6 +62,18 @@ npm run dev
 ```
 
 Abrí [http://localhost:3000](http://localhost:3000).
+
+Para probar:
+
+```bash
+npm test             # tests (vitest)
+npm run typecheck
+npm run lint
+```
+
+Qué hace el sitio y cómo se sabe que anda bien: [docs/SPEC.md](docs/SPEC.md).
+Por qué está armado así: [docs/adr/](docs/adr/INDICE.md).
+Seguridad: [SECURITY.md](SECURITY.md).
 
 ## ¿Te sirvió?
 
