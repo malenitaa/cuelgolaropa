@@ -25,8 +25,20 @@ está disponible en español e inglés.
 No, no hay cuentas, ni login, ni nada parecido.
 
 **¿Manda mis datos a algún lado?**
-No. Tu ubicación se usa una sola vez, en el momento, para consultar el
-clima — no se guarda en ningún lado.
+Solo lo justo para responder, y no se guarda. El sitio no tiene base de
+datos ni cookies: lo único que queda en tu navegador es el idioma que
+elegiste.
+
+Para responder, el servidor del sitio consulta dos servicios externos:
+
+- **[Open-Meteo](https://open-meteo.com/)** recibe las coordenadas de tu
+  ubicación para darte el pronóstico. Si escribís una ciudad, también
+  recibe ese texto para encontrarla.
+- **[BigDataCloud](https://www.bigdatacloud.com/)** recibe las
+  coordenadas para mostrarte el nombre del lugar.
+
+Las consultas salen del servidor del sitio, no de tu navegador, así que
+esos servicios no ven tu IP.
 
 **¿De dónde sale el clima?**
 De [Open-Meteo](https://open-meteo.com/), una fuente pública y gratuita
