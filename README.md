@@ -29,16 +29,16 @@ Solo lo justo para responder, y no se guarda. El sitio no tiene base de
 datos ni cookies: lo único que queda en tu navegador es el idioma que
 elegiste.
 
-Para responder, el servidor del sitio consulta dos servicios externos:
+Para responder, el sitio consulta dos servicios externos:
 
 - **[Open-Meteo](https://open-meteo.com/)** recibe las coordenadas de tu
-  ubicación para darte el pronóstico. Si escribís una ciudad, también
-  recibe ese texto para encontrarla.
+  ubicación, redondeadas a ~1 km, para darte el pronóstico. Si escribís
+  una ciudad, también recibe ese texto para encontrarla. Esa consulta la
+  hace el servidor del sitio, así que Open-Meteo no ve tu IP.
 - **[BigDataCloud](https://www.bigdatacloud.com/)** recibe las
-  coordenadas para mostrarte el nombre del lugar.
-
-Las consultas salen del servidor del sitio, no de tu navegador, así que
-esos servicios no ven tu IP.
+  coordenadas para mostrarte el nombre del lugar. Esa consulta sale de
+  tu navegador (es como lo piden sus términos), así que BigDataCloud sí
+  ve tu IP. Solo pasa si compartís tu ubicación.
 
 **¿De dónde sale el clima?**
 De [Open-Meteo](https://open-meteo.com/), una fuente pública y gratuita

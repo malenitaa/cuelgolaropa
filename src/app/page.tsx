@@ -19,7 +19,13 @@ type Phase = "locating" | "need-city" | "loading" | "result" | "error";
 type DecisionColor = "green" | "yellow" | "red";
 
 const LANG_STORAGE_KEY = "cuelgolaropa-lang";
-const DEFAULT_CITY = { lat: -34.6037, lon: -58.3816 };
+// Nombre fijo: los términos de BigDataCloud no permiten geocodificar
+// coordenadas guardadas, solo la ubicación actual del dispositivo.
+const DEFAULT_CITY = {
+  lat: -34.6037,
+  lon: -58.3816,
+  labels: { es: "Buenos Aires, Argentina", en: "Buenos Aires, Argentina" },
+};
 
 interface HourlyPreviewItem {
   time: string;
@@ -66,6 +72,34 @@ interface RawLocation {
 function buildLocationLabel(data: RawLocation) {
   return [data.name, data.admin1, data.country].filter(Boolean).join(", ");
 }
+
+interface BigDataCloudResponse {
+  city?: string;
+  locality?: string;
+  principalSubdivision?: string;
+  countryName?: string;
+}
+
+// El endpoint gratis de BigDataCloud solo se puede llamar desde el navegador
+// (su fair use policy banea la IP si se llama desde un server).
+async function reverseGeocode(lat: number, lon: number, lang: Lang) {
+  const url = new URL("https://api.bigdatacloud.net/data/reverse-geocode-client");
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("localityLanguage", lang);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("reverseGeocodeFailed");
+  const data = (await res.json()) as BigDataCloudResponse;
+  return buildLocationLabel({
+    name: data.city || data.locality || null,
+    admin1: data.principalSubdivision || null,
+    country: data.countryName || null,
+  });
+}
+
+// ~1 km: alcanza para el pronóstico y hace que visitas cercanas pidan la
+// misma URL, que la CDN tiene cacheada (ver /api/weather).
+const roundCoord = (n: number) => Math.round(n * 100) / 100;
 
 const COLOR_STYLES: Record<
   DecisionColor,
@@ -353,7 +387,9 @@ export default function Home() {
     setPendingLon(lon);
     setPhase("loading");
     try {
-      const res = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+      const res = await fetch(
+        `/api/weather?lat=${roundCoord(lat)}&lon=${roundCoord(lon)}`
+      );
       const data = await res.json();
       if (!res.ok) {
         const err = data as ApiError;
@@ -371,18 +407,10 @@ export default function Home() {
 
   const fetchLocationLabels = useCallback((lat: number, lon: number) => {
     Promise.all([
-      fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=es`),
-      fetch(`/api/reverse-geocode?lat=${lat}&lon=${lon}&lang=en`),
+      reverseGeocode(lat, lon, "es"),
+      reverseGeocode(lat, lon, "en"),
     ])
-      .then(async ([esRes, enRes]) => {
-        if (!esRes.ok || !enRes.ok) return;
-        const esData = (await esRes.json()) as RawLocation;
-        const enData = (await enRes.json()) as RawLocation;
-        setLocationLabels({
-          es: buildLocationLabel(esData),
-          en: buildLocationLabel(enData),
-        });
-      })
+      .then(([es, en]) => setLocationLabels({ es, en }))
       .catch(() => {
         // Best-effort: no location label if reverse geocoding fails.
       });
@@ -390,8 +418,8 @@ export default function Home() {
 
   const fetchDefaultCity = useCallback(() => {
     fetchWeather(DEFAULT_CITY.lat, DEFAULT_CITY.lon);
-    fetchLocationLabels(DEFAULT_CITY.lat, DEFAULT_CITY.lon);
-  }, [fetchWeather, fetchLocationLabels]);
+    setLocationLabels(DEFAULT_CITY.labels);
+  }, [fetchWeather]);
 
   useEffect(() => {
     if (!hasGeolocation()) {

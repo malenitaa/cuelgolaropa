@@ -140,5 +140,9 @@ export async function GET(request: NextRequest) {
       weekdayIndex: new Date(`${date}T00:00:00`).getDay(),
       weatherCode: daily.weather_code[i + 1],
     })),
+  }, {
+    // La página redondea las coordenadas a ~1 km, así que visitas cercanas
+    // piden la misma URL y la CDN la sirve sin volver a llamar a Open-Meteo.
+    headers: { "Cache-Control": "public, s-maxage=600" },
   });
 }

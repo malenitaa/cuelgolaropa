@@ -2,8 +2,9 @@ import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
-// El navegador solo habla con este mismo sitio: el clima y la geocodificación
-// pasan por /api/*, así que connect-src no necesita orígenes de afuera.
+// El navegador habla con este mismo sitio (el clima y la búsqueda de ciudad
+// pasan por /api/*) y con BigDataCloud, cuyo endpoint gratis de nombre del
+// lugar solo se puede llamar desde el cliente.
 // Sin nonce, porque la página es estática: Next mete scripts inline (el
 // payload de RSC) y un nonce obligaría a renderizar cada visita en el server.
 // 'unsafe-eval' solo en dev, para los stacks de error de React.
@@ -13,7 +14,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:", // data: para el favicon con emoji
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' https://api.bigdatacloud.net",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
