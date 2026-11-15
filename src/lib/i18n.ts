@@ -45,7 +45,6 @@ export type ErrorKey =
   | "weatherServiceUnreachable"
   | "insufficientData"
   | "missingCity"
-  | "geocodeServiceError"
   | "geocodeServiceUnreachable"
   | "cityNotFound"
   | "networkError";
@@ -61,7 +60,6 @@ export const ERRORS: Record<
     weatherServiceUnreachable: () => "No se pudo contactar al servicio de clima.",
     insufficientData: () => "El servicio de clima no devolvió datos suficientes.",
     missingCity: () => "Falta el nombre de la ciudad.",
-    geocodeServiceError: () => "El servicio de ubicación no respondió correctamente.",
     geocodeServiceUnreachable: () => "No se pudo contactar al servicio de ubicación.",
     cityNotFound: (city) => `No se encontró la ciudad "${city}".`,
     networkError: () => "No se pudo conectar. Revisá tu conexión.",
@@ -73,7 +71,6 @@ export const ERRORS: Record<
     weatherServiceUnreachable: () => "Couldn't reach the weather service.",
     insufficientData: () => "The weather service didn't return enough data.",
     missingCity: () => "Missing city name.",
-    geocodeServiceError: () => "The location service didn't respond correctly.",
     geocodeServiceUnreachable: () => "Couldn't reach the location service.",
     cityNotFound: (city) => `Couldn't find the city "${city}".`,
     networkError: () => "Couldn't connect. Check your internet connection.",

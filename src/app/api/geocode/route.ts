@@ -139,11 +139,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
-    latitude: match.latitude,
-    longitude: match.longitude,
-    name: match.name,
-    country: match.country ?? null,
-    admin1: match.admin1 ?? null,
-  });
+  return NextResponse.json(
+    {
+      latitude: match.latitude,
+      longitude: match.longitude,
+      name: match.name,
+      country: match.country ?? null,
+      admin1: match.admin1 ?? null,
+    },
+    // Las coordenadas de una ciudad no cambian: la CDN guarda la respuesta un
+    // día y las búsquedas repetidas no le gastan cuota a Open-Meteo.
+    { headers: { "Cache-Control": "public, s-maxage=86400" } }
+  );
 }
