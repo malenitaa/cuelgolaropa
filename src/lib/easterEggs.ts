@@ -371,5 +371,8 @@ const EASTER_EGGS: Record<string, EasterEgg> = {
 };
 
 export function findEasterEgg(city: string): EasterEgg | null {
-  return EASTER_EGGS[normalizeCity(city)] ?? null;
+  // hasOwn: sin esto, "constructor" o "__proto__" devuelven cosas de
+  // Object.prototype y la página las trata como un easter egg.
+  const key = normalizeCity(city);
+  return Object.hasOwn(EASTER_EGGS, key) ? EASTER_EGGS[key] : null;
 }
