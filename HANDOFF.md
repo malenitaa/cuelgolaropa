@@ -1,6 +1,6 @@
 # ¿Cuelgo la ropa hoy? — handoff
 
-**Estado:** en producción en cuelgolaropa.ar; responde SÍ/NO con geolocalización, ciudad escrita o Buenos Aires por defecto. Cerrado el 15/11/2026. · **Última actualización:** 15/11/2026
+**Estado:** en producción en cuelgolaropa.ar; responde SÍ/NO con geolocalización, ciudad escrita o Buenos Aires por defecto. Cerrado el 15/11/2026; en producción la v0.3.0. · **Última actualización:** 17/11/2026
 **Lenguaje:** TypeScript (Next.js 16.4, React 19.3) · **Forma:** simple (una página, dos rutas, reglas puras en `src/lib/`)
 **Correr:** `npm run dev` · **Tests:** `npm test` · **Deploy:** merge a `main` → Vercel deploya solo (producción = `main`, verificado el 15/11/2026)
 
@@ -27,13 +27,18 @@ timeline
 | 2 · Decisión sobre "ahora" | reglas sobre `current`, aviso de empeora | ✅ | CA-1 a CA-9 |
 | 3 · Dominio y SEO | dominio, OG, sitemap, redirect | ✅ | — |
 | 4 · Auditoría de repos | Next al día, CSP, terceros, caché (#7, #8, #9) | ✅ | CA-10 a CA-17, CA-19, CA-20 |
-| 5 · Cierre | spec, tests, rompedora, auditoría, docs | ✅ (este PR) | todos salvo CA-20 a CA-22 sin test |
+| 5 · Cierre | spec, tests, rompedora, auditoría, docs | ✅ (#25, v0.3.0) | todos salvo CA-20 a CA-22 sin test |
 | 6 · Robustez | rate limit, e2e, uptime | ⏳ | CA-20 a CA-22 |
 
 ## Qué se hizo (lo último arriba)
+- 15/11 · #25 mergeado (`70f3e2a`), tag y release [v0.3.0](https://github.com/malenitaa/cuelgolaropa/releases/tag/v0.3.0). Producción deployó bien (home, `/api/weather` y `/api/geocode` en 200, CSP igual) y el primer `Audit` sobre `main` dio verde.
+- 15/11 · Dependabot: mergeados #14 (React 19.3, Tailwind 4.3.5) y #15 (ESLint 10); cerrados #16 (TypeScript 7 rompe `typescript-eslint`) y #17 (`@types/node` 26, el runtime es Node 24). #18 hace que Dependabot no proponga majors de `@types/node`.
 - 15/11 · Cierre: `docs/SPEC.md` (26 criterios), vitest con 198 tests, auditoría (`docs/AUDITORIA.md`), 6 ADRs, `SECURITY.md`, audit diario en la CI, plantillas de issues y PR, versión 0.3.0.
 - 15/11 · La rompedora encontró dos bugs que se corrigieron: un 200 raro de Open-Meteo daba 500 sin JSON, y "constructor" se tomaba como easter egg. Además, sin humedad o viento ya no responde SÍ.
 - 15/11 · #7, #8, #9 cerrados (v0.2.0); Dependabot ignora majors de `@types/node` (#18).
+
+## Cómo retomar
+`gh issue list --label ready --state open` y seguir por "Qué sigue". La doc interna está en `docs/interno/DISENO.md` (solo local, en `.gitignore`); si no está en la máquina, se reconstruye desde este HANDOFF, `docs/SPEC.md` y `docs/adr/`.
 
 ## Qué sigue
 1. #20 · Prender Dependabot alerts, security updates y el reporte privado de vulnerabilidades (manual, 2 minutos).
