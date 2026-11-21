@@ -14,8 +14,8 @@ el sitio no usa modelos.
 |---|---|---|---|
 | Crítica | 0 | — | — |
 | Alta | 0 | — | — |
-| Media | 4 | 2 (R1, R4) + M2 en parte | M1: falta la regla del Firewall (el código va en #19); M2: falta prender las alertas |
-| Baja | 13 (R2, R3, L1–L6, B-1–B-5) | 4 (R2, R3, L3, L4) + L5 en parte | 8 (L1, L2, L6, B-1–B-5); L5: falta el reporte privado |
+| Media | 4 | 3 (R1, R4, M2) | M1: falta la regla del Firewall (el código va en #19) |
+| Baja | 13 (R2, R3, L1–L6, B-1–B-5) | 5 (R2, R3, L3, L4, L5) | 8 (L1, L2, L6, B-1–B-5) |
 | Info | 4 | — | 4 |
 
 Chequeos automáticos:
@@ -55,10 +55,10 @@ Historial de git: sin secretos; `README.privado.md` nunca se commiteó; los auto
 **Corrección propuesta:** una regla de rate limit en el Firewall de Vercel sobre `/api/*`; redondear del lado del server y usar la caché de datos de `fetch` (`next: { revalidate }`) para que la clave sea la URL de Open-Meteo normalizada; cachear el 404 unos minutos. No se hizo en el cierre porque cambia la estrategia de caché del ADR-0005 y la regla del Firewall es configuración de Vercel.
 
 ### [M2] Media · Alertas de Dependabot apagadas y `npm audit` solo en PRs
-**Dónde:** configuración del repo; `.github/workflows/ci.yml` · **Estado:** corregido en parte
+**Dónde:** configuración del repo; `.github/workflows/ci.yml` · **Estado:** corregido el 21/11/2026 (#20)
 **Evidencia:** `automated-security-fixes` → `{"enabled":false}`; `vulnerability-alerts` → 404.
 **Riesgo:** un CVE de `next` o `react` podía quedar en producción hasta dos semanas (cooldown de 7 días más la corrida semanal) sin aviso.
-**Corrección:** `.github/workflows/audit.yml` corre `npm audit --package-lock-only --omit=dev --audit-level=high` todos los días y en cada push a `main`. **Falta** prender Dependabot alerts y security updates en Settings → Code security (manual, #20).
+**Corrección:** `.github/workflows/audit.yml` corre `npm audit --package-lock-only --omit=dev --audit-level=high` todos los días y en cada push a `main`. Dependabot alerts y security updates prendidos el 21/11/2026 (#20): `vulnerability-alerts` → 204, `dependabot_security_updates` → `enabled`.
 
 ### [R2] Baja · "constructor" o "__proto__" se tomaban como easter egg
 **Dónde:** `src/lib/easterEggs.ts:findEasterEgg()` · **Estado:** corregido en el cierre
@@ -92,7 +92,7 @@ Historial de git: sin secretos; `README.privado.md` nunca se commiteó; los auto
 **Corrección:** el ADR lo dice. No hay dónde inyectar HTML hoy.
 
 ### [L5] Baja · Sin canal privado de reporte y `SECURITY.md` inexistente
-**Estado:** `SECURITY.md` creado en el cierre; **falta** prender Private vulnerability reporting (manual, #20).
+**Estado:** corregido. `SECURITY.md` creado en el cierre; Private vulnerability reporting prendido el 21/11/2026 (#20) y `SECURITY.md` apunta ahí.
 
 ### [L6] Baja · 9 vulnerabilidades moderadas en dependencias de desarrollo
 **Estado:** aceptado. Solo afectan al lint; `--omit=dev` da 0. Las sube Dependabot.

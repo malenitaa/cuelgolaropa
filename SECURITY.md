@@ -2,10 +2,9 @@
 
 ## Reportar un problema
 
-Abrí un issue en <https://github.com/malenitaa/cuelgolaropa/issues>. El sitio no tiene cuentas ni
-guarda datos de quien lo visita, así que un issue público alcanza. Si lo que encontraste expone a
-quien visita el sitio (por ejemplo, su ubicación), escribí solo "tengo un problema de seguridad para
-reportar en privado" y te contacto.
+Reportalo en privado en <https://github.com/malenitaa/cuelgolaropa/security/advisories/new>. Si no
+expone a nadie (el sitio no tiene cuentas ni guarda datos de quien lo visita), un issue público en
+<https://github.com/malenitaa/cuelgolaropa/issues> también sirve.
 
 Incluí qué encontraste, cómo reproducirlo y en qué URL. Te contesto dentro de una semana.
 
@@ -29,7 +28,7 @@ Solo entra lo que tiene test o se verificó a mano en la auditoría.
 | Sin datos de humedad o viento, el sitio no responde SÍ | `src/app/api/weather/route.ts` | `src/app/api/weather/route.peor-caso.test.ts` |
 | No hay cookies ni base de datos; en el navegador solo queda el idioma | `src/app/page.tsx` | — (verificado a mano, 15/11/2026) |
 | Sin secretos en el historial de git | — | — (gitleaks, 15/11/2026) |
-| Las dependencias de producción no tienen vulnerabilidades altas ni críticas conocidas | `.github/workflows/ci.yml`, `audit.yml` | `npm audit --omit=dev --audit-level=high` en cada PR, en cada push a `main` y todos los días |
+| Las dependencias de producción no tienen vulnerabilidades altas ni críticas conocidas | `.github/workflows/ci.yml`, `audit.yml` | `npm audit --omit=dev --audit-level=high` en cada PR, en cada push a `main` y todos los días; además, alertas y parches de seguridad de Dependabot |
 
 ## Qué no hace nunca
 
