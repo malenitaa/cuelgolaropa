@@ -140,7 +140,7 @@ describe("GET /api/geocode · entrada de peor caso", () => {
   it("404 y 400 no llevan Cache-Control público de un día", async () => {
     stub(() => ({ results: [] }));
     const r404 = await GET(pedido("zzzz"));
-    expect(r404.headers.get("cache-control") ?? "").not.toContain("s-maxage");
+    expect(r404.headers.get("cache-control") ?? "").not.toContain("86400");
   });
 
   it("sin coma, 12 palabras: máximo 5 llamadas a Open-Meteo", async () => {

@@ -14,7 +14,7 @@ el sitio no usa modelos.
 |---|---|---|---|
 | Crítica | 0 | — | — |
 | Alta | 0 | — | — |
-| Media | 4 | 2 (R1, R4) + M2 en parte | M1 pendiente; M2: falta prender las alertas |
+| Media | 4 | 2 (R1, R4) + M2 en parte | M1: falta la regla del Firewall (el código va en #19); M2: falta prender las alertas |
 | Baja | 13 (R2, R3, L1–L6, B-1–B-5) | 4 (R2, R3, L3, L4) + L5 en parte | 8 (L1, L2, L6, B-1–B-5); L5: falta el reporte privado |
 | Info | 4 | — | 4 |
 
@@ -49,7 +49,7 @@ Historial de git: sin secretos; `README.privado.md` nunca se commiteó; los auto
 **Corrección:** la ruta responde 502 `insufficientData` si falta humedad, viento o código de ahora (la clave ya existía y no se usaba). `decide()` sigue asumiendo números válidos. · **Test:** `src/app/api/weather/route.peor-caso.test.ts` (CA-24); `src/lib/decision.peor-caso.test.ts` documenta el contrato.
 
 ### [M1] Media · Se puede agotar la cuota de Open-Meteo esquivando la caché
-**Dónde:** `src/app/api/weather/route.ts` (`cache: "no-store"`, sin redondeo del lado del server); `src/app/api/geocode/route.ts` (hasta 5 llamadas, 404 sin caché) · **Estado:** pendiente, #19
+**Dónde:** `src/app/api/weather/route.ts` (`cache: "no-store"`, sin redondeo del lado del server); `src/app/api/geocode/route.ts` (hasta 5 llamadas, 404 sin caché) · **Estado:** código corregido el 21/11/2026 (#19); falta la regla de rate limit en el Firewall de Vercel
 **Evidencia (producción):** `/api/weather?lat=-34.6&lon=-58.38&z=504418791` → `x-vercel-cache: MISS`; `lat=-34.6003239` → `MISS`; un 404 de geocode no se cachea.
 **Riesgo:** con unos 120 pedidos por minuto se acaba la cuota de 600/min para todas las visitas (todo sale de las IP de Vercel). Además, cada pedido a geocode puede ocupar la función hasta 5 × 8 s.
 **Corrección propuesta:** una regla de rate limit en el Firewall de Vercel sobre `/api/*`; redondear del lado del server y usar la caché de datos de `fetch` (`next: { revalidate }`) para que la clave sea la URL de Open-Meteo normalizada; cachear el 404 unos minutos. No se hizo en el cierre porque cambia la estrategia de caché del ADR-0005 y la regla del Firewall es configuración de Vercel.

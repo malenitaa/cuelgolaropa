@@ -95,6 +95,20 @@ describe("GET /api/weather", () => {
     expect(url.searchParams.get("latitude")).toBe("-34.6");
   });
 
+  it("CA-28: dadas coordenadas con más decimales o un parámetro de más, cuando se pide, entonces llama a Open-Meteo con la misma URL redondeada y caché de datos de 10 min", async () => {
+    const fetchMock = stubFetch(async () => Response.json(openMeteo("2026-11-15T14:15")));
+    await GET(pedido("lat=-34.6003239&lon=-58.3816"));
+    await GET(pedido("lat=-34.6&lon=-58.38&z=1"));
+
+    const [primera, segunda] = fetchMock.mock.calls as unknown as [string, RequestInit & { next?: { revalidate?: number } }][];
+    expect(String(primera[0])).toBe(String(segunda[0]));
+    const url = new URL(String(primera[0]));
+    expect(url.searchParams.get("latitude")).toBe("-34.6");
+    expect(url.searchParams.get("longitude")).toBe("-58.38");
+    expect(primera[1].next?.revalidate).toBe(600);
+    expect(primera[1].cache).toBeUndefined();
+  });
+
   it("CA-12: dado que la hora actual coincide con un balde horario, cuando se pide, entonces las horas arrancan en la siguiente", async () => {
     stubFetch(async () => Response.json(openMeteo("2026-11-15T14:00")));
     const body = await (await GET(pedido("lat=-34.6&lon=-58.38"))).json();

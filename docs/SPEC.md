@@ -59,7 +59,7 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 | CA-13 | una ciudad vacía o de más de 200 caracteres | se pide `/api/geocode` | 400 | `src/app/api/geocode/route.test.ts` |
 | CA-14 | "Palermo, CABA" o "Palermo CABA" | se pide `/api/geocode` | devuelve el Palermo de la Ciudad de Buenos Aires (con alias de CABA) | `src/app/api/geocode/route.test.ts` |
 | CA-15 | una búsqueda sin coma de muchas palabras | se pide `/api/geocode` | a lo sumo 5 llamadas a Open-Meteo | `src/app/api/geocode/route.test.ts` |
-| CA-16 | una ciudad que no existe | se pide `/api/geocode` | 404 `cityNotFound`, sin caché | `src/app/api/geocode/route.test.ts` |
+| CA-16 | una ciudad que no existe | se pide `/api/geocode` | 404 `cityNotFound`, con `Cache-Control: public, s-maxage=300` (#19) | `src/app/api/geocode/route.test.ts` |
 | CA-17 | una ciudad encontrada | se pide `/api/geocode` | 200 con `Cache-Control: public, s-maxage=86400` | `src/app/api/geocode/route.test.ts` |
 | CA-18 | se escribe "Melmac" (con o sin mayúsculas o tildes) | se busca | respuesta propia, sin llamar a la red | `src/lib/easterEggs.test.ts` |
 | CA-19 | cualquier página | se sirve | CSP con `connect-src 'self' https://api.bigdatacloud.net` y `frame-ancestors 'none'` | `src/next-config.test.ts` |
@@ -71,6 +71,8 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 | CA-25 | se escribe "constructor", "__proto__" u otro nombre de `Object` | se busca un easter egg | no hay easter egg | `src/lib/easterEggs.peor-caso.test.ts` |
 | CA-26 | Open-Meteo devuelve resultados sin coordenadas o `null` | se pide `/api/geocode` | se saltean; nunca 200 sin `latitude`/`longitude` | `src/app/api/geocode/route.peor-caso.test.ts` |
 | CA-27 | se muestra un resultado | en `es` o `en` | al pie, "Según/Based on Open-Meteo.com · CC BY 4.0" con link a `open-meteo.com` y a la licencia (#12) | — (verificado a mano el 20/11/2026) |
+| CA-28 | coordenadas con más de 2 decimales o un parámetro de más | se pide `/api/weather` | Open-Meteo se llama con lat/lon redondeadas a 2 decimales y `next: { revalidate: 600 }`: la misma URL que sin el ruido (#19) | `src/app/api/weather/route.test.ts` |
+| CA-29 | cualquier búsqueda | se pide `/api/geocode` | Open-Meteo se llama con `next: { revalidate: 86400 }` (#19) | `src/app/api/geocode/route.test.ts` |
 
 ## 6. Casos borde y errores
 
@@ -82,5 +84,5 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 
 ## 7. Fuera de alcance por ahora
 
-- Rate limit en `/api/geocode` (#8: se retoma si aparece abuso).
+- Rate limit en el código: va como regla del Firewall de Vercel sobre `/api/*` (#19).
 - Umbrales por región o por tipo de ropa.

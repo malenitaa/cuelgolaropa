@@ -69,12 +69,20 @@ describe("GET /api/geocode", () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
   });
 
-  it("CA-16: dada una ciudad que no existe, cuando se pide, entonces 404 cityNotFound sin caché", async () => {
+  it("CA-16: dada una ciudad que no existe, cuando se pide, entonces 404 cityNotFound con caché de 5 min", async () => {
     stubOpenMeteo({});
     const res = await GET(pedido("Xqzwv"));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ errorKey: "cityNotFound", detail: "Xqzwv" });
-    expect(res.headers.get("cache-control")).toBeNull();
+    expect(res.headers.get("cache-control")).toBe("public, s-maxage=300");
+  });
+
+  it("CA-29: dada una búsqueda, cuando se llama a Open-Meteo, entonces usa la caché de datos de un día", async () => {
+    const fetchMock = stubOpenMeteo({ Rosario: [{ latitude: -32.95, longitude: -60.64, name: "Rosario" }] });
+    await GET(pedido("Rosario"));
+    const init = (fetchMock.mock.calls[0] as unknown[])[1] as RequestInit & { next?: { revalidate?: number } };
+    expect(init.next?.revalidate).toBe(86400);
+    expect(init.cache).toBeUndefined();
   });
 
   it("CA-16: dado que Open-Meteo falla, cuando se pide, entonces 502", async () => {
