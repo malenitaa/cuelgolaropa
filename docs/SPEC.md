@@ -84,5 +84,4 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 
 ## 7. Fuera de alcance por ahora
 
-- Rate limit en el código: va como regla del Firewall de Vercel sobre `/api/*` (#19).
 - Umbrales por región o por tipo de ropa.

@@ -18,7 +18,9 @@ o un decimal más, porque la clave es la URL entera.
    decimales también del lado del server, así que un parámetro basura o un decimal de más le pega a la
    función, pero no genera otra llamada a Open-Meteo. Next solo guarda respuestas 200.
 
-El rate limit por IP va como regla del Firewall de Vercel sobre `/api/*` (configuración, no código).
+El rate limit por IP va como regla del Firewall de Vercel ("rate limit api"): `Request Path` empieza con `/api/`,
+ventana fija de 60 s, 30 pedidos por IP, después 429. Es configuración, no código; Hobby permite una sola regla
+de rate limit por proyecto y cuenta por región.
 
 ## Alternativas consideradas
 | Alternativa | Por qué no |
@@ -36,4 +38,5 @@ El rate limit por IP va como regla del Firewall de Vercel sobre `/api/*` (config
 ## Cómo se verifica
 CA-12, CA-16, CA-17, CA-28 y CA-29 en los tests de las rutas. Con `next build` + `next start` (21/11/2026),
 tres pedidos a `/api/weather` con distintos decimales y `&z=` dejaron una sola entrada en `.next/cache/fetch-cache`,
-y repetir un 404 de geocode no sumó entradas. En producción, `x-vercel-cache: MISS` y después `HIT` (15/11/2026).
+y repetir un 404 de geocode no sumó entradas. En producción, `x-vercel-cache: MISS` y después `HIT` (15/11/2026);
+35 pedidos seguidos a `/api/weather` desde una IP dieron 30 × 200 y 5 × 429 (21/11/2026).
