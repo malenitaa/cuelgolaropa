@@ -70,6 +70,7 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 | CA-24 | falta la humedad, el viento o el código de ahora | se pide `/api/weather` | 502 `insufficientData`: no responde SÍ con datos faltantes | `src/app/api/weather/route.peor-caso.test.ts` |
 | CA-25 | se escribe "constructor", "__proto__" u otro nombre de `Object` | se busca un easter egg | no hay easter egg | `src/lib/easterEggs.peor-caso.test.ts` |
 | CA-26 | Open-Meteo devuelve resultados sin coordenadas o `null` | se pide `/api/geocode` | se saltean; nunca 200 sin `latitude`/`longitude` | `src/app/api/geocode/route.peor-caso.test.ts` |
+| CA-27 | se muestra un resultado | en `es` o `en` | al pie, "Según/Based on Open-Meteo.com · CC BY 4.0" con link a `open-meteo.com` y a la licencia (#12) | — (verificado a mano el 20/11/2026) |
 
 ## 6. Casos borde y errores
 
@@ -82,5 +83,4 @@ Está en producción en [cuelgolaropa.ar](https://cuelgolaropa.ar).
 ## 7. Fuera de alcance por ahora
 
 - Rate limit en `/api/geocode` (#8: se retoma si aparece abuso).
-- Crédito visible a Open-Meteo en la página (#12).
 - Umbrales por región o por tipo de ropa.

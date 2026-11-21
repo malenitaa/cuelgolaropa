@@ -93,6 +93,7 @@ export const UI: Record<
     cannotHang: string;
     yes: string;
     no: string;
+    dataBy: string;
   }
 > = {
   es: {
@@ -109,6 +110,7 @@ export const UI: Record<
     cannotHang: "Mejor no cuelgues la ropa",
     yes: "SÍ",
     no: "NO",
+    dataBy: "Según",
   },
   en: {
     pageTitle: "Should I hang my laundry today?",
@@ -124,6 +126,7 @@ export const UI: Record<
     cannotHang: "Better not hang your laundry",
     yes: "YES",
     no: "NO",
+    dataBy: "Based on",
   },
 };
 
