@@ -711,6 +711,19 @@ export default function Home() {
             >
               {t.tryAnotherCity}
             </button>
+            <p className={`text-[10px] ${styles.linkText}`}>
+              {t.dataBy}{" "}
+              <a href="https://open-meteo.com/" className="underline">
+                Open-Meteo.com
+              </a>{" "}
+              ·{" "}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                className="underline"
+              >
+                CC BY 4.0
+              </a>
+            </p>
           </div>
         </div>
       </>
