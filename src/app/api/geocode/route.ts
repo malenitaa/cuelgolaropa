@@ -71,8 +71,10 @@ async function searchOpenMeteo(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    // Caché de datos de Next (solo respuestas 200): repetir una búsqueda, aunque
+    // termine en 404, no vuelve a llamar a Open-Meteo en un día.
     const res = await fetch(url.toString(), {
-      cache: "no-store",
+      next: { revalidate: 86400 },
       signal: controller.signal,
     });
     if (!res.ok) {
@@ -142,7 +144,8 @@ export async function GET(request: NextRequest) {
   if (!match) {
     return NextResponse.json(
       { errorKey: "cityNotFound", detail: city },
-      { status: 404 }
+      // Poco tiempo: si Open-Meteo suma la ciudad, se ve pronto.
+      { status: 404, headers: { "Cache-Control": "public, s-maxage=300" } }
     );
   }
 

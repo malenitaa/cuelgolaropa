@@ -21,7 +21,7 @@ Solo entra lo que tiene test o se verificó a mano en la auditoría.
 |---|---|---|
 | El navegador solo puede conectarse al propio sitio y a BigDataCloud (`connect-src`); nadie puede meter el sitio en un iframe | `next.config.ts` | `src/next-config.test.ts` |
 | La geolocalización solo la puede pedir el propio sitio | `next.config.ts` (Permissions-Policy) | `src/next-config.test.ts` |
-| Open-Meteo recibe las coordenadas redondeadas a ~1 km | `src/app/page.tsx:roundCoord` | — (verificado a mano, 15/11/2026) |
+| Open-Meteo recibe las coordenadas redondeadas a ~1 km | `src/app/page.tsx:roundCoord`, `src/app/api/weather/route.ts:roundCoord` | `src/app/api/weather/route.test.ts` (CA-28) |
 | Open-Meteo no ve la IP de quien visita: lo llama el server | `src/app/api/*/route.ts` | `src/app/api/weather/route.test.ts`, `src/app/api/geocode/route.test.ts` |
 | Las rutas solo llaman a hosts fijos de Open-Meteo, con los parámetros armados con `URLSearchParams` (no hay proxy abierto) | `src/app/api/*/route.ts` | `src/app/api/geocode/route.peor-caso.test.ts` |
 | Coordenadas fuera de rango o ciudades de más de 200 caracteres se rechazan sin llamar afuera | `src/app/api/*/route.ts` | CA-10 y CA-13 en `docs/SPEC.md` |

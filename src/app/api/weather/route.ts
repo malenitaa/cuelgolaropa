@@ -27,6 +27,8 @@ interface OpenMeteoForecastResponse {
 const WINDOW_SIZE = 8;
 const FETCH_TIMEOUT_MS = 8_000;
 
+const roundCoord = (n: number) => Math.round(n * 100) / 100;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get("lat");
@@ -46,9 +48,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ errorKey: "invalidCoords" }, { status: 400 });
   }
 
+  // Redondeo a ~1 km acá también (la página ya lo hace): así un decimal de más
+  // o un parámetro basura terminan en la misma URL y en la caché de datos.
   const url = new URL("https://api.open-meteo.com/v1/forecast");
-  url.searchParams.set("latitude", String(latitude));
-  url.searchParams.set("longitude", String(longitude));
+  url.searchParams.set("latitude", String(roundCoord(latitude)));
+  url.searchParams.set("longitude", String(roundCoord(longitude)));
   url.searchParams.set(
     "current",
     "temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day"
@@ -65,8 +69,9 @@ export async function GET(request: NextRequest) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    // Next guarda en su caché de datos solo las respuestas 200, por URL.
     const res = await fetch(url.toString(), {
-      cache: "no-store",
+      next: { revalidate: 600 },
       signal: controller.signal,
     });
     if (!res.ok) {
