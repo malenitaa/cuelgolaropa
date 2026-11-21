@@ -24,6 +24,7 @@ Solo entra lo que tiene test o se verificó a mano en la auditoría.
 | Open-Meteo no ve la IP de quien visita: lo llama el server | `src/app/api/*/route.ts` | `src/app/api/weather/route.test.ts`, `src/app/api/geocode/route.test.ts` |
 | Las rutas solo llaman a hosts fijos de Open-Meteo, con los parámetros armados con `URLSearchParams` (no hay proxy abierto) | `src/app/api/*/route.ts` | `src/app/api/geocode/route.peor-caso.test.ts` |
 | Coordenadas fuera de rango o ciudades de más de 200 caracteres se rechazan sin llamar afuera | `src/app/api/*/route.ts` | CA-10 y CA-13 en `docs/SPEC.md` |
+| Una IP no puede hacer más de 30 pedidos por minuto a `/api/*`: el resto recibe 429 | Firewall de Vercel (regla "rate limit api") | — (verificado a mano, 21/11/2026: 30 × 200 y 5 × 429) |
 | Una búsqueda hace a lo sumo 5 llamadas a Open-Meteo, cada una con timeout de 8 s | `src/app/api/geocode/route.ts` | `src/app/api/geocode/route.test.ts`, `route.peor-caso.test.ts` |
 | Sin datos de humedad o viento, el sitio no responde SÍ | `src/app/api/weather/route.ts` | `src/app/api/weather/route.peor-caso.test.ts` |
 | No hay cookies ni base de datos; en el navegador solo queda el idioma | `src/app/page.tsx` | — (verificado a mano, 15/11/2026) |
@@ -42,7 +43,8 @@ Solo entra lo que tiene test o se verificó a mano en la auditoría.
   las coordenadas redondeadas o la ciudad, por el tiempo que Vercel los retenga.
 - BigDataCloud recibe las coordenadas sin redondear y ve tu IP, porque sus términos piden que se lo
   llame desde el navegador.
-- El sitio no tiene rate limit: alguien podría agotar la cuota gratuita de Open-Meteo y dejarlo sin
-  responder un rato.
+- El rate limit es de 30 pedidos por minuto por IP en `/api/*` (Firewall de Vercel, contado por
+  región). Alguien con muchas IP, o que vaya despacio todo el día, todavía podría agotar la cuota
+  gratuita de Open-Meteo y dejar el sitio sin responder un rato.
 
 Detalle completo: [docs/AUDITORIA.md](docs/AUDITORIA.md).

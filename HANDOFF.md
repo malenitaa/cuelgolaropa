@@ -1,6 +1,6 @@
 # ¿Cuelgo la ropa hoy? — handoff
 
-**Estado:** en producción en cuelgolaropa.ar; responde SÍ/NO con geolocalización, ciudad escrita o Buenos Aires por defecto. Cerrado el 15/11/2026; en producción la v0.3.0. · **Última actualización:** 17/11/2026
+**Estado:** en producción en cuelgolaropa.ar; responde SÍ/NO con geolocalización, ciudad escrita o Buenos Aires por defecto. Cerrado el 15/11/2026; en producción la v0.3.0 más #12, #19 y #20. · **Última actualización:** 21/11/2026
 **Lenguaje:** TypeScript (Next.js 16.4, React 19.3) · **Forma:** simple (una página, dos rutas, reglas puras en `src/lib/`)
 **Correr:** `npm run dev` · **Tests:** `npm test` · **Deploy:** merge a `main` → Vercel deploya solo (producción = `main`, verificado el 15/11/2026)
 
@@ -17,8 +17,9 @@ timeline
         Etapa 3 · Dominio y SEO (05/08–20/08) : cuelgolaropa.ar : redirect del .vercel.app : licencia MIT
         Etapa 4 · Auditoría de repos (15/11) : Next 16.4.5 : CSP : BigDataCloud desde el cliente : caché : v0.2.0
         Etapa 5 · Cierre (15/11) : spec : 198 tests : auditoría OWASP : ADRs : docs
+        Etapa 6a · Licencia y cuota (20–21/11) : crédito a Open-Meteo (#12) : caché de datos y rate limit (#19) : alertas y reporte privado (#20)
     section Próximo
-        Etapa 6 · Robustez en producción : rate limit (#19) : e2e (#23) : uptime (#24)
+        Etapa 6b · Robustez en producción : e2e (#23) : uptime (#24)
 ```
 
 | Etapa | Qué incluye | Estado | Criterios (SPEC) |
@@ -28,9 +29,14 @@ timeline
 | 3 · Dominio y SEO | dominio, OG, sitemap, redirect | ✅ | — |
 | 4 · Auditoría de repos | Next al día, CSP, terceros, caché (#7, #8, #9) | ✅ | CA-10 a CA-17, CA-19, CA-20 |
 | 5 · Cierre | spec, tests, rompedora, auditoría, docs | ✅ (#25, v0.3.0) | todos salvo CA-20 a CA-22 sin test |
-| 6 · Robustez | rate limit, e2e, uptime | ⏳ | CA-20 a CA-22 |
+| 6a · Licencia y cuota | crédito a Open-Meteo, caché de datos, rate limit, alertas (#12, #19, #20) | ✅ (#27, #28, #29, #30) | CA-16, CA-27 a CA-29 |
+| 6b · Robustez | e2e, uptime | ⏳ | CA-20 a CA-22 |
 
 ## Qué se hizo (lo último arriba)
+- 21/11 · #19 cerrado: regla "rate limit api" en el Firewall de Vercel (30 pedidos por minuto por IP en `/api/*`, 429; Hobby permite una sola). Probado en producción: 35 pedidos seguidos dieron 30 × 200 y 5 × 429.
+- 21/11 · #20 cerrado (#29): Dependabot alerts, security updates y Private vulnerability reporting prendidos; `SECURITY.md` apunta a `security/advisories/new`.
+- 21/11 · #28: `/api/weather` redondea lat/lon en el server y las dos rutas usan la caché de datos de `fetch` (10 min y 1 día); el 404 de geocode se cachea 5 min. 200 tests. ADR-0005 actualizado.
+- 20/11 · #12 cerrado (#27): "Según Open-Meteo.com · CC BY 4.0" al pie del resultado, como pide la licencia de los datos.
 - 15/11 · #25 mergeado (`70f3e2a`), tag y release [v0.3.0](https://github.com/malenitaa/cuelgolaropa/releases/tag/v0.3.0). Producción deployó bien (home, `/api/weather` y `/api/geocode` en 200, CSP igual) y el primer `Audit` sobre `main` dio verde.
 - 15/11 · Dependabot: mergeados #14 (React 19.3, Tailwind 4.3.5) y #15 (ESLint 10); cerrados #16 (TypeScript 7 rompe `typescript-eslint`) y #17 (`@types/node` 26, el runtime es Node 24). #18 hace que Dependabot no proponga majors de `@types/node`.
 - 15/11 · Cierre: `docs/SPEC.md` (26 criterios), vitest con 198 tests, auditoría (`docs/AUDITORIA.md`), 6 ADRs, `SECURITY.md`, audit diario en la CI, plantillas de issues y PR, versión 0.3.0.
@@ -41,13 +47,13 @@ timeline
 `gh issue list --label ready --state open` y seguir por "Qué sigue". La doc interna está en `docs/interno/DISENO.md` (solo local, en `.gitignore`); si no está en la máquina, se reconstruye desde este HANDOFF, `docs/SPEC.md` y `docs/adr/`.
 
 ## Qué sigue
-1. #20 · Prender Dependabot alerts, security updates y el reporte privado de vulnerabilidades (manual, 2 minutos).
-2. #19 · Rate limit en el Firewall de Vercel y caché del lado del server.
-3. #12 · Crédito a Open-Meteo en la página (lo pide su licencia).
-4. #23 · Tests end-to-end de la página.
-5. #24 · Uptime.
+1. #23 · Tests end-to-end de la página.
+2. #24 · Uptime.
+3. Parches menores: `next` 16.4.6, `eslint` 10.15, `vitest` 5.1.1 (Dependabot los propone).
 
 ## Decisiones que tomé (para vetar)
+- **El 404 de `/api/geocode` se cachea 5 minutos** (antes, sin caché), y la búsqueda vacía queda 1 día en la caché de datos: una ciudad que Open-Meteo suma tarda hasta un día en aparecer. CA-16, ADR-0005.
+- **El crédito dice "Según"** ("Based on" en inglés): cubre el "indicar si hubo cambios" de CC BY 4.0, porque el SÍ/NO es una interpretación de los datos. CA-27.
 - **Sin humedad, viento o código de "ahora", `/api/weather` responde 502 "El servicio de clima no devolvió datos suficientes"** en vez de una respuesta. Antes decía SÍ verde. `src/app/api/weather/route.ts`; CA-24.
 - **Un 200 de Open-Meteo con otra forma se muestra como "el servicio de clima no respondió correctamente"** (502), en vez de un 500 sin texto. CA-23.
 - **Resultados de geocoding sin coordenadas se saltean.** CA-26.
@@ -67,6 +73,8 @@ timeline
 - 9 vulnerabilidades moderadas solo de desarrollo (eslint/typescript-eslint).
 - TypeScript 7 rompe `typescript-eslint` (#16 cerrado); esperar soporte.
 - Observabilidad: nada mide errores ni caídas (#24).
+- Los términos de Open-Meteo avisan que en Vercel la cuota se puede agotar antes (IP compartidas). Si aparecen 502 sin abuso, es eso; la caché ayuda, el rate limit no.
+- En `next dev` dentro del navegador de la app, la página se quedó en "Buscando tu ubicación…" con un error de React (`removeChild` de null); con el build de producción no pasa. Sin revisar si es del entorno.
 
 ## Dónde está todo
 | Qué | Dónde |
